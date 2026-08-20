@@ -19,6 +19,10 @@ app.use(apiLimiter);
 
 app.use('/api', routes);
 
+app.get('/', (req, res) => {
+  res.send('Afya Links Backend is running perfectly! 🚀');
+});
+
 app.use(errorHandler);
 
 const PORT = env.PORT || 4000;
