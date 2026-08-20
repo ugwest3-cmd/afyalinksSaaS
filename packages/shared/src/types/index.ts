@@ -82,6 +82,7 @@ export interface Order {
   payment_link: string | null;
   created_at: string;
   updated_at: string;
+  pharmacy?: { id: string; name: string };
 }
 
 // Order Attachment
