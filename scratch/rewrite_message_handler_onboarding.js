@@ -1,4 +1,7 @@
-import { WAMessage } from '@whiskeysockets/baileys';
+const fs = require('fs');
+const path = 'g:\\AFYA LINKS\\apps\\server\\src\\services\\whatsapp\\messageHandler.ts';
+
+const content = `import { WAMessage } from '@whiskeysockets/baileys';
 import { logger } from '../../config/logger.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -26,7 +29,7 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
 
         if (!messageText) return;
 
-        logger.info(`[Gemini Processing] Message on ${sessionId} (fromMe: ${isFromPharmacy}): ${messageText.substring(0, 50)}...`);
+        logger.info(\`[Gemini Processing] Message on \${sessionId} (fromMe: \${isFromPharmacy}): \${messageText.substring(0, 50)}...\`);
 
         // 1. Find pharmacy
         const { data: accountData } = await supabaseAdmin
@@ -54,7 +57,7 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
             if (!clinicData) {
                 const { data: newClinic } = await supabaseAdmin
                     .from('clinics')
-                    .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' }) // Wait, shared types status is string, but we added onboarding_status
+                    .insert({ phone_number: senderPhone, name: \`Clinic \${senderPhone}\`, status: 'PENDING' }) // Wait, shared types status is string, but we added onboarding_status
                     .select('*')
                     .single();
                 clinicData = newClinic;
@@ -74,8 +77,8 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
         }
 
         // Fetch dynamic system prompt
-        let systemPrompt = `You are an AI assistant for Afya Links, a wholesale pharmacy ordering platform.
-Your job is to analyze a WhatsApp message and classify it.`;
+        let systemPrompt = \`You are an AI assistant for Afya Links, a wholesale pharmacy ordering platform.
+Your job is to analyze a WhatsApp message and classify it.\`;
 
         try {
             const { data } = await supabaseAdmin
@@ -91,7 +94,7 @@ Your job is to analyze a WhatsApp message and classify it.`;
         let historyContents: any[] = [];
         
         if (isOnboarding && !isFromPharmacy) {
-            systemPrompt += `
+            systemPrompt += \`
             
 The clinic sending this message is currently ONBOARDING.
 Your task is to have a polite, conversational chat with them to collect the following information one by one:
@@ -103,7 +106,7 @@ Your task is to have a polite, conversational chat with them to collect the foll
 Do not ask for everything at once. Ask one or two questions at a time.
 If you need to ask them a question, use the CONVERSATIONAL_REPLY intent and provide the 'replyText'.
 If you have successfully collected ALL the required information across the chat history, use the ONBOARDING_COMPLETE intent and extract all the data into the 'clinicDetails' object.
-`;
+\`;
             try {
                 // Fetch last 10 messages
                 const { data: logs } = await supabaseAdmin
@@ -124,7 +127,7 @@ If you have successfully collected ALL the required information across the chat 
 
         if (historyContents.length === 0) {
             historyContents = [
-                { role: 'user', parts: [{ text: `Message Context:\nSender is Pharmacy: ${isFromPharmacy}\nMessage Text: "${messageText}"\nQuoted Message: "${quotedText}"` }] }
+                { role: 'user', parts: [{ text: \`Message Context:\\nSender is Pharmacy: \${isFromPharmacy}\\nMessage Text: "\${messageText}"\\nQuoted Message: "\${quotedText}"\` }] }
             ];
         }
 
@@ -176,7 +179,7 @@ If you have successfully collected ALL the required information across the chat 
         if (!resultText) throw new Error("Gemini returned empty response");
         
         const analysis = JSON.parse(resultText);
-        logger.info(`[Gemini Analysis] ${JSON.stringify(analysis)}`);
+        logger.info(\`[Gemini Analysis] \${JSON.stringify(analysis)}\`);
 
         // 3. Handle based on intent
         if (analysis.intent === 'CONVERSATIONAL_REPLY' && analysis.replyText && !isFromPharmacy) {
@@ -202,7 +205,7 @@ If you have successfully collected ALL the required information across the chat 
                 additional_phones: analysis.clinicDetails.additionalPhones
             }).eq('phone_number', senderPhone);
 
-            const successMsg = `✅ Welcome to Afya Links, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
+            const successMsg = \`✅ Welcome to Afya Links, \${analysis.clinicDetails.clinicName}! Your account is fully set up.\\n\\nYou can now place orders by simply texting your list of medicines here.\`;
             await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
 
             await supabaseAdmin.from('chat_logs').insert({
@@ -220,7 +223,7 @@ If you have successfully collected ALL the required information across the chat 
 
             const order = await orderService.getOrderByNumber(analysis.orderNumber);
             if (!order) {
-                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, `Could not find order ${analysis.orderNumber}.`);
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, \`Could not find order \${analysis.orderNumber}.\`);
                 return;
             }
 
@@ -228,10 +231,10 @@ If you have successfully collected ALL the required information across the chat 
             const paymentLink = await paymentService.getPaymentRedirectUrl(order.order_number);
 
             const clinicPhone = order.customer_phone;
-            const msgToClinic = `Your order ${order.order_number} has been reviewed by the pharmacy.\n\nTotal Amount: UGX ${analysis.amount.toLocaleString()}\n\nPlease complete your payment securely here:\n${paymentLink}`;
+            const msgToClinic = \`Your order \${order.order_number} has been reviewed by the pharmacy.\\n\\nTotal Amount: UGX \${analysis.amount.toLocaleString()}\\n\\nPlease complete your payment securely here:\\n\${paymentLink}\`;
             
-            await WhatsAppManager.getInstance().sendMessage(sessionId, `${clinicPhone}@s.whatsapp.net`, msgToClinic);
-            await WhatsAppManager.getInstance().sendMessage(sessionId, jid, `✅ Price of UGX ${analysis.amount.toLocaleString()} set for ${order.order_number}. Payment link has been sent to the clinic.`);
+            await WhatsAppManager.getInstance().sendMessage(sessionId, \`\${clinicPhone}@s.whatsapp.net\`, msgToClinic);
+            await WhatsAppManager.getInstance().sendMessage(sessionId, jid, \`✅ Price of UGX \${analysis.amount.toLocaleString()} set for \${order.order_number}. Payment link has been sent to the clinic.\`);
             
         } else if (analysis.intent === 'NEW_ORDER' && !isFromPharmacy) {
             // Ignore if onboarding isn't done
@@ -247,7 +250,7 @@ If you have successfully collected ALL the required information across the chat 
                 originalMessage: messageText
             });
             
-            const notifyMsg = `🛒 *NEW AFYA LINKS ORDER*\nOrder: ${order.order_number}\nClinic: ${clinicData?.name || senderPhone}\n\nDetails:\n${messageText}\n\n*Please review the order and reply with the total price (e.g. "TOTAL 50000").*\n(Make sure to reply directly to this message so I know which order it is!)`;
+            const notifyMsg = \`🛒 *NEW AFYA LINKS ORDER*\\nOrder: \${order.order_number}\\nClinic: \${clinicData?.name || senderPhone}\\n\\nDetails:\\n\${messageText}\\n\\n*Please review the order and reply with the total price (e.g. "TOTAL 50000").*\\n(Make sure to reply directly to this message so I know which order it is!)\`;
             
             await WhatsAppManager.getInstance().sendMessage(sessionId, jid, notifyMsg);
         } else {
@@ -255,6 +258,9 @@ If you have successfully collected ALL the required information across the chat 
         }
 
     } catch (error) {
-        logger.error(error, `Error in Gemini handleIncomingMessage for session ${sessionId}:`);
+        logger.error(error, \`Error in Gemini handleIncomingMessage for session \${sessionId}:\`);
     }
 };
+`;
+
+fs.writeFileSync(path, content);
