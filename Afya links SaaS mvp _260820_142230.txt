@@ -1,0 +1,1470 @@
+AFYA LINKS — MULTI-PHARMACY WHOLESALE ORDERING PLATFORM
+1. PRODUCT OBJECTIVE
+Build a centralized SaaS platform owned and controlled by Afya Links that connects:
+Clinics → Wholesale Pharmacies → Payment
+The system does not maintain a medicine catalogue, inventory, or pharmacy pricing database.
+Instead:
+1. Each wholesale pharmacy provides a WhatsApp number.
+2. Afya Links connects that number through Baileys.
+3. That number becomes the pharmacy's dedicated ordering channel.
+4. Clinics send orders directly to that pharmacy's WhatsApp number.
+5. Afya Links receives and records the order.
+6. Afya Links routes the order to the correct pharmacy.
+7. The pharmacy reviews the order and determines availability/pricing.
+8. The pharmacy submits the final total.
+9. Afya Links creates a payment request using that pharmacy's PesaPal credentials.
+10. Afya Links generates a branded payment page.
+11. Clinic pays.
+12. Money is processed through the pharmacy's own PesaPal merchant account.
+13. Afya Links receives the payment status and updates the order.
+14. Afya Links Super Admin can monitor the entire transaction.
+
+───
+
+2. CORE PRINCIPLE
+Afya Links owns the platform.
+The pharmacy owns:
+• Its business
+• Its WhatsApp number
+• Its PesaPal account
+• Its money
+• Its pricing
+• Its stock decisions
+Afya Links owns:
+• The software
+• The database
+• The ordering infrastructure
+• The payment orchestration
+• The central administration
+• The order history
+• The platform branding
+• The customer-facing payment experience
+
+───
+
+3. TECHNOLOGY STACK
+Frontend
+Next.js + TypeScript
+Deploy to:
+Vercel
+Backend
+Node.js + TypeScript
+Deploy to:
+Railway
+Database
+Supabase PostgreSQL
+Use:
+• PostgreSQL
+• Supabase Auth
+• Row Level Security
+• Supabase Storage where needed
+Supabase RLS should be enabled on exposed tables and policies should enforce the intended access boundaries. 
+WhatsApp
+Baileys
+Run the WhatsApp workers on Railway.
+Each pharmacy's WhatsApp account should have a separate persistent session.
+Baileys supports QR/pairing authentication and persistent sessions. 
+Payments
+PesaPal API 3.0
+Each pharmacy has its own PesaPal merchant credentials.
+Source control
+GitHub
+
+───
+
+4. BRANDING
+Use Afya Links branding throughout.
+Primary color
+Afya Links Green
+Use:
+text
+Primary: #0B8F6A
+Dark:    #075C47
+Light:   #E8F7F2
+
+Supporting colors:
+text
+Background: #F7FAF9
+White:      #FFFFFF
+Text:       #17211E
+Muted:      #6B7773
+Success:    #16834B
+Warning:    #D98A00
+Danger:     #D64545
+Border:     #DCE7E3
+
+Keep the interface:
+• clean
+• professional
+• medical/healthcare oriented
+• modern
+• minimal
+• mobile responsive
+Do not make it look like a generic banking dashboard.
+
+───
+
+5. DOMAIN ARCHITECTURE
+Your public domain should be:
+getafyalinks.com
+Do not expose:
+text
+something.up.railway.app
+
+to clinics.
+Do not use Railway's generated domain for customer-facing URLs.
+Payment URL
+Use something like:
+text
+https://getafyalinks.com/pay/AFY-2026-000123
+
+or:
+text
+https://getafyalinks.com/payment/AFY-2026-000123
+
+The clinic receives:
+Afya Links Payment
+ Order #AFY-2026-000123
+ Abacus Wholesale Pharmacy
+ Amount: UGX 850,000
+[Pay Now]
+The payment page is served from your Afya Links domain.
+The backend behind it can still live on Railway.
+
+───
+
+6. USERS
+MVP should have only two application roles.
+SUPER_ADMIN
+You.
+Full access.
+SYSTEM_OPERATOR
+Optional internal staff role.
+Restricted administrative access.
+There is no pharmacy dashboard in MVP.
+There is no clinic dashboard in MVP.
+The clinic interacts through WhatsApp and the payment page.
+The pharmacy interacts primarily through WhatsApp/PesaPal.
+
+───
+
+7. PHARMACY RECORD
+Create:
+text
+pharmacies
+
+Fields:
+text
+id
+name
+legal_name
+phone
+email
+address
+city
+country
+status
+whatsapp_number
+whatsapp_session_id
+pesapal_status
+created_at
+updated_at
+
+Status:
+text
+ACTIVE
+SUSPENDED
+PENDING
+INACTIVE
+
+
+───
+
+8. CLINIC RECORD
+Create:
+text
+clinics
+
+Fields:
+text
+id
+name
+phone
+email
+facility_type
+location
+status
+created_at
+updated_at
+
+The clinic does not need to create an Afya Links login.
+The WhatsApp phone number can be the primary identifier.
+
+───
+
+9. WHATSAPP ARCHITECTURE
+This is one of the most important parts.
+Every pharmacy gets a WhatsApp number.
+Example:
+text
+Abacus Pharmacy
+WhatsApp:
++256700000001
+
+XYZ Pharmacy
+WhatsApp:
++256700000002
+
+ABC Pharmacy
+WhatsApp:
++256700000003
+
+The pharmacy provides the number.
+Afya Links connects it to Baileys.
+Database:
+text
+whatsapp_accounts
+
+id
+pharmacy_id
+phone_number
+session_id
+status
+last_connected_at
+last_disconnected_at
+created_at
+updated_at
+
+Critical relationship:
+text
+WhatsApp Number
+       ↓
+WhatsApp Session
+       ↓
+Pharmacy ID
+
+Therefore:
+text
++256700000001
+       ↓
+ABACUS
+
+and:
+text
++256700000002
+       ↓
+XYZ
+
+
+───
+
+10. MULTI-SESSION BAILEYS ARCHITECTURE
+Do not build one giant WhatsApp session.
+Build a WhatsApp session manager.
+Conceptually:
+text
+WhatsAppManager
+│
+├── Session: pharmacy_001
+│     └── Abacus number
+│
+├── Session: pharmacy_002
+│     └── XYZ number
+│
+└── Session: pharmacy_003
+      └── ABC number
+
+Each session must be independently:
+• authenticated
+• connected
+• disconnected
+• reconnected
+• monitored
+• logged
+There are existing multi-session Baileys implementations demonstrating this architecture, but for your own MVP, keep the session manager inside your backend rather than depending on an unknown third-party wrapper. 
+
+───
+
+11. SUPER ADMIN — WHATSAPP MANAGEMENT
+Admin page:
+text
+WhatsApp Connections
+
+Display:
+
+Pharmacy
+Number
+Status
+Last Seen
+Action
+
+Abacus
++256...
+Connected
+2 min ago
+Manage
+
+XYZ
++256...
+Disconnected
+1 hr ago
+Reconnect
+
+
+Admin actions:
+text
+Connect Number
+Generate QR
+Pair Number
+Disconnect
+Reconnect
+View Session Status
+Send Test Message
+
+When adding a pharmacy:
+text
+1. Create pharmacy
+2. Enter WhatsApp number
+3. Create WhatsApp session
+4. Display QR/pairing code
+5. Pharmacy connects number
+6. System verifies connection
+7. Mark CONNECTED
+
+
+───
+
+12. ORDER FLOW
+This is the heart of the application.
+Clinic sends:
+Hello, I want to order 10 boxes of Amoxicillin 500mg and 5 boxes of Paracetamol.
+The message arrives on:
+Abacus Pharmacy WhatsApp.
+The system determines:
+text
+received_number = Abacus WhatsApp
+
+Then:
+text
+pharmacy_id = Abacus
+
+Create:
+text
+Order #AFY-2026-000001
+
+
+───
+
+13. DO NOT PARSE MEDICINES INTO A CATALOGUE
+This is a deliberate requirement.
+Do NOT create:
+text
+products
+drugs
+medicine_prices
+inventory
+stock
+
+for the MVP.
+Instead save:
+text
+original_message
+
+Example:
+text
+"10 boxes Amoxicillin 500mg
+5 boxes Paracetamol"
+
+If the clinic sends an image/PDF, preserve it.
+Create:
+text
+order_attachments
+
+with:
+text
+order_id
+file_url
+file_type
+created_at
+
+
+───
+
+14. ORDER DATABASE
+Create:
+text
+orders
+
+Fields:
+text
+id
+order_number
+pharmacy_id
+clinic_id
+whatsapp_account_id
+customer_phone
+original_message
+amount
+currency
+status
+payment_status
+pesapal_tracking_id
+payment_link
+created_at
+updated_at
+
+Statuses:
+text
+RECEIVED
+SENT_TO_PHARMACY
+AWAITING_PRICE
+PRICE_RECEIVED
+PAYMENT_PENDING
+PAID
+PROCESSING
+DISPATCHED
+COMPLETED
+CANCELLED
+EXPIRED
+
+
+───
+
+15. PHARMACY ORDER RECEIVING
+The pharmacy does not need a dashboard.
+The order can be delivered to the pharmacy through the same WhatsApp system or the internal Afya Links communication channel you establish.
+For MVP, the cleanest workflow is:
+text
+Clinic
+ ↓
+Pharmacy's WhatsApp
+ ↓
+Afya Links
+ ↓
+Order recorded
+ ↓
+Pharmacy receives order notification
+
+Example:
+🛒 NEW AFYA LINKS ORDER
+Order: AFY-2026-000123
+ Clinic: ABC Medical Centre
+ Phone: +256...
+Order: 10 × Amoxicillin 500mg
+ 5 × Paracetamol
+Please review the order and reply:
+TOTAL 850000
+
+───
+
+16. PHARMACY RETURNS TOTAL
+The pharmacy responds:
+text
+TOTAL 850000
+
+The backend extracts:
+text
+amount = 850000
+
+and validates it.
+For robustness, eventually support:
+text
+TOTAL: 850000
+
+rather than accepting arbitrary messages.
+Then:
+text
+order.status = PRICE_RECEIVED
+order.amount = 850000
+
+
+───
+
+17. PAYMENT CREATION
+Now the system identifies:
+text
+order.pharmacy_id
+
+Then loads the PesaPal credentials belonging to that pharmacy.
+Conceptually:
+text
+Order
+ ↓
+Pharmacy
+ ↓
+Pharmacy PesaPal credentials
+ ↓
+PesaPal authentication
+ ↓
+Submit Order Request
+ ↓
+Payment URL
+
+PesaPal's current API 3.0 Submit Order Request returns a payment redirect URL, which is exactly the mechanism we need for the MVP. 
+
+───
+
+18. IMPORTANT PESA PAL SECURITY
+Do not expose:
+text
+consumer_secret
+
+to the frontend.
+Do not put it in:
+text
+Next.js client code
+
+Do not put it in:
+text
+public environment variables
+
+Do not display it in the pharmacy interface.
+Use Railway server-side environment/secrets or a proper encrypted secret-management approach.
+Supabase explicitly warns that service/secret keys must never be exposed on the frontend. 
+For a multi-pharmacy system, ideally create a secure credentials layer:
+text
+payment_credentials
+
+with encrypted sensitive values.
+
+───
+
+19. PESA PAL CREDENTIAL RECORD
+Conceptually:
+text
+payment_accounts
+
+id
+pharmacy_id
+provider
+consumer_key_encrypted
+consumer_secret_encrypted
+status
+environment
+created_at
+updated_at
+
+Environment:
+text
+SANDBOX
+LIVE
+
+Never mix them.
+
+───
+
+20. PAYMENT PAGE
+After PesaPal returns the payment URL, don't simply expose the raw PesaPal URL immediately.
+Create your own payment page:
+text
+https://getafyalinks.com/pay/AFY-2026-000123
+
+Page:
+text
+────────────────────────────
+
+          AFYA LINKS
+
+       Payment Request
+
+Order #AFY-2026-000123
+
+Pharmacy
+Abacus Wholesale Pharmacy
+
+Amount Due
+
+UGX 850,000
+
+Order Status
+Awaiting Payment
+
+       [ PAY NOW ]
+
+Secure payment powered by PesaPal
+
+────────────────────────────
+
+When the customer clicks PAY NOW, your backend redirects them to the appropriate PesaPal payment URL.
+This gives you:
+• Afya Links branding
+• clean URL
+• order reference
+• payment status
+• controlled customer experience
+
+───
+
+21. DO NOT PUT RAILWAY URL IN THE LINK
+Wrong:
+text
+https://afyalinks-production.up.railway.app/payment/123
+
+Correct:
+text
+https://getafyalinks.com/pay/AFY-2026-000123
+
+The architecture should be:
+text
+getafyalinks.com
+       ↓
+Vercel
+       ↓
+Payment page
+
+Railway
+       ↓
+Backend API
+       ↓
+PesaPal
+       ↓
+Supabase
+
+Your custom domain points to the Vercel frontend.
+
+───
+
+22. PAYMENT CALLBACK
+Configure PesaPal callback/IPN endpoints to your backend.
+For example:
+text
+https://api.getafyalinks.com/api/payments/pesapal/callback
+
+and:
+text
+https://api.getafyalinks.com/api/payments/pesapal/ipn
+
+Do not invent these exact routes blindly in PesaPal configuration; implement them in your backend and register the actual production URLs.
+PesaPal's documentation explicitly provides IPN registration and payment-status mechanisms. 
+
+───
+
+23. PAYMENT VERIFICATION
+Never trust only:
+text
+?status=PAID
+
+from the browser.
+The backend should verify the transaction against PesaPal.
+Flow:
+text
+Customer pays
+       ↓
+PesaPal
+       ↓
+Callback/IPN
+       ↓
+Afya Links backend
+       ↓
+Verify transaction
+       ↓
+Update payment
+       ↓
+Update order
+
+Then:
+text
+payment_status = PAID
+order.status = PAID
+
+
+───
+
+24. PAYMENT TABLE
+Create:
+text
+payments
+
+Fields:
+text
+id
+order_id
+pharmacy_id
+provider
+merchant_reference
+pesapal_tracking_id
+amount
+currency
+status
+payment_method
+raw_status
+paid_at
+created_at
+updated_at
+
+Status:
+text
+PENDING
+COMPLETED
+FAILED
+CANCELLED
+REFUNDED
+UNKNOWN
+
+
+───
+
+25. PAYMENT HISTORY
+You do want history inside Afya Links.
+But you are not building a replacement PesaPal financial dashboard.
+Your admin can see:
+text
+Payments
+
+Order        Pharmacy     Amount       Status
+AFY-001      Abacus       850,000      PAID
+AFY-002      XYZ          420,000      PENDING
+AFY-003      ABC          1,200,000    FAILED
+
+This is for Afya Links operational monitoring.
+If Abacus wants detailed financial information, they use their own PesaPal account.
+
+───
+
+26. SUPER ADMIN DASHBOARD
+Main dashboard:
+text
+AFYA LINKS
+Super Admin
+
+Cards:
+text
+TOTAL PHARMACIES
+12
+
+ACTIVE WHATSAPP NUMBERS
+10
+
+ORDERS TODAY
+47
+
+PENDING ORDERS
+8
+
+PAYMENTS TODAY
+UGX 18,450,000
+
+SUCCESSFUL PAYMENTS
+42
+
+Charts:
+text
+Orders over time
+Payments over time
+Orders by pharmacy
+Payment success rate
+
+
+───
+
+27. PHARMACY MANAGEMENT
+Admin:
+text
+Pharmacies
+
+Actions:
+text
++ Add Pharmacy
+
+Form:
+text
+Pharmacy Name
+Legal Name
+Phone
+Email
+Location
+WhatsApp Number
+PesaPal Consumer Key
+PesaPal Consumer Secret
+Environment
+Status
+
+After creation:
+text
+Abacus Pharmacy
+───────────────
+WhatsApp: Connected ✓
+PesaPal: Connected ✓
+Orders: 124
+Paid Orders: 117
+Status: Active
+
+
+───
+
+28. ADMIN ORDER VIEW
+Admin should be able to open any order.
+Example:
+text
+ORDER #AFY-2026-000123
+
+Pharmacy
+Abacus Wholesale Pharmacy
+
+Clinic
+ABC Medical Centre
+
+Customer WhatsApp
++256...
+
+Original Order
+----------------
+10 boxes Amoxicillin 500mg
+5 boxes Paracetamol
+
+Pharmacy Total
+UGX 850,000
+
+Payment
+PAID
+
+PesaPal Tracking ID
+xxxxxxxxxxxx
+
+Created
+20 Aug 2026 13:22
+
+Paid
+20 Aug 2026 13:31
+
+
+───
+
+29. ORDER TIMELINE
+Very useful for debugging.
+text
+13:20
+Order received from clinic
+
+13:20
+Pharmacy identified: Abacus
+
+13:21
+Order sent to pharmacy
+
+13:25
+Pharmacy submitted total
+
+13:25
+PesaPal payment request created
+
+13:25
+Payment link generated
+
+13:26
+Payment link sent to clinic
+
+13:31
+Payment confirmed
+
+13:31
+Order marked PAID
+
+This becomes extremely valuable when something goes wrong.
+
+───
+
+30. AUDIT LOG
+Create:
+text
+audit_logs
+
+Record:
+text
+actor
+action
+entity_type
+entity_id
+metadata
+timestamp
+ip_address
+
+Examples:
+text
+ADMIN_CREATED_PHARMACY
+WHATSAPP_CONNECTED
+ORDER_RECEIVED
+PRICE_SUBMITTED
+PAYMENT_CREATED
+PAYMENT_CONFIRMED
+ORDER_CANCELLED
+PESAPAL_ERROR
+
+
+───
+
+31. DATABASE RELATIONSHIPS
+The core relationship should be:
+text
+pharmacies
+     │
+     ├──────── whatsapp_accounts
+     │
+     ├──────── payment_accounts
+     │
+     └──────── orders
+                    │
+                    ├──── clinics
+                    │
+                    └──── payments
+
+The most important foreign key is:
+text
+orders.pharmacy_id
+
+Everything downstream comes from that.
+
+───
+
+32. MULTI-TENANCY
+Even though pharmacies don't get dashboards in MVP, still design the database as multi-tenant.
+Every pharmacy-specific record should have:
+text
+pharmacy_id
+
+Examples:
+text
+orders.pharmacy_id
+payments.pharmacy_id
+whatsapp_accounts.pharmacy_id
+payment_accounts.pharmacy_id
+
+This makes it possible to add pharmacy portals later without rebuilding the database.
+
+───
+
+33. RLS
+Use Supabase Row Level Security.
+Even though the Super Admin backend needs broad access, don't simply expose your entire database to the frontend.
+Supabase recommends RLS for granular row-level access and specifically warns that service-role/secret keys bypass RLS and must remain server-side. 
+
+───
+
+34. API STRUCTURE
+Railway backend:
+text
+/api
+
+Pharmacies
+text
+POST   /api/admin/pharmacies
+GET    /api/admin/pharmacies
+GET    /api/admin/pharmacies/:id
+PATCH  /api/admin/pharmacies/:id
+DELETE /api/admin/pharmacies/:id
+
+WhatsApp
+text
+POST /api/admin/whatsapp/connect
+GET  /api/admin/whatsapp/sessions
+GET  /api/admin/whatsapp/:sessionId/status
+GET  /api/admin/whatsapp/:sessionId/qr
+POST /api/admin/whatsapp/:sessionId/reconnect
+POST /api/admin/whatsapp/:sessionId/disconnect
+
+Orders
+text
+GET /api/admin/orders
+GET /api/admin/orders/:id
+POST /api/orders
+PATCH /api/orders/:id
+
+Payments
+text
+POST /api/payments/create
+GET  /api/payments/:id
+POST /api/payments/pesapal/callback
+POST /api/payments/pesapal/ipn
+
+
+───
+
+35. WHATSAPP MESSAGE ROUTING
+When a message comes in:
+text
+Baileys
+   ↓
+message received
+   ↓
+identify receiving WhatsApp account
+   ↓
+find whatsapp_accounts
+   ↓
+get pharmacy_id
+   ↓
+identify clinic phone
+   ↓
+find/create clinic
+   ↓
+create order
+   ↓
+save message
+
+Never route an order based on a pharmacy name typed by the clinic.
+The receiving WhatsApp number is the pharmacy identifier.
+That is one of the core design rules.
+
+───
+
+36. CLINIC RESPONSE
+After receiving an order:
+text
+Thank you.
+
+Your order has been received by
+Abacus Wholesale Pharmacy.
+
+Order ID:
+AFY-2026-000123
+
+The pharmacy is reviewing your order.
+
+You will receive the total shortly.
+
+Then after pharmacy submits price:
+text
+Order #AFY-2026-000123
+
+Abacus Wholesale Pharmacy has confirmed your order.
+
+Total:
+UGX 850,000
+
+Please complete payment here:
+
+https://getafyalinks.com/pay/AFY-2026-000123
+
+Thank you for using Afya Links.
+
+
+───
+
+37. PAYMENT SUCCESS MESSAGE
+After verified payment:
+text
+Payment received ✓
+
+Order #AFY-2026-000123
+
+Amount paid:
+UGX 850,000
+
+Pharmacy:
+Abacus Wholesale Pharmacy
+
+Your payment has been confirmed.
+
+Afya Links
+getafyalinks.com
+
+
+───
+
+38. FAILURE HANDLING
+If PesaPal fails:
+text
+Payment could not be completed.
+
+Order:
+AFY-2026-000123
+
+Please try again using:
+
+https://getafyalinks.com/pay/AFY-2026-000123
+
+The order remains:
+text
+PAYMENT_PENDING
+
+Do not create duplicate orders when the clinic retries payment.
+
+───
+
+39. IDEMPOTENCY
+This is essential.
+Every order must have a unique:
+text
+merchant_reference
+
+Example:
+text
+AFY-2026-000123
+
+PesaPal's Submit Order Request requires a unique merchant reference. 
+If the customer clicks Pay twice, don't create two separate Afya Links orders.
+Payment attempts can be separate records if necessary, but the underlying order remains the same.
+
+───
+
+40. SECURITY REQUIREMENTS
+Implement:
+Authentication
+Supabase Auth for admin users. 
+Authorization
+Roles:
+text
+SUPER_ADMIN
+OPERATOR
+
+Secrets
+Never expose:
+text
+PesaPal consumer secret
+Supabase service role key
+Baileys session credentials
+
+to frontend.
+HTTPS
+Production only.
+Rate limiting
+Especially:
+text
+payment endpoints
+WhatsApp endpoints
+admin authentication
+
+Audit logging
+Every sensitive administrative action.
+
+───
+
+41. WHATSAPP SESSION STORAGE
+Don't simply store Baileys authentication files randomly inside the Railway filesystem and assume they will always survive deployments/restarts.
+Design persistent session storage.
+For example:
+text
+whatsapp_sessions
+
+with encrypted session/auth state stored appropriately.
+Railway persistent storage or an external persistent storage mechanism can be used depending on your deployment architecture.
+The critical requirement:
+A Railway restart must not require you to scan every pharmacy's WhatsApp QR code again.
+
+───
+
+42. ADMIN LOGIN
+URL:
+text
+https://getafyalinks.com/admin
+
+Login:
+text
+Email
+Password
+
+[LOGIN]
+
+MFA can be added later.
+
+───
+
+43. PUBLIC PAYMENT ROUTE
+Public:
+text
+https://getafyalinks.com/pay/:orderNumber
+
+This page must not require login.
+But it should only expose information necessary for payment.
+Do not expose:
+• internal pharmacy credentials
+• internal IDs
+• admin information
+• database structure
+• raw PesaPal credentials
+
+───
+
+44. NO DRUG CATALOGUE
+This is a hard requirement.
+The MVP must NOT contain:
+text
+Drug catalogue
+Drug search
+Drug prices
+Stock
+Inventory
+Wholesale price lists
+Automatic medicine pricing
+
+The system stores the order request as received.
+The pharmacy is responsible for:
+text
+availability
+quantity
+price
+substitution
+final amount
+
+
+───
+
+45. MVP PHASES
+Phase 1 — Foundation
+Build:
+• GitHub repository
+• Next.js frontend
+• Railway backend
+• Supabase project
+• environment configuration
+• database migrations
+• Supabase Auth
+• admin login
+• custom domain
+
+───
+
+Phase 2 — Pharmacy management
+Build:
+• Add pharmacy
+• Edit pharmacy
+• Activate/deactivate pharmacy
+• Assign WhatsApp number
+• Configure PesaPal credentials
+• Test PesaPal connection
+
+───
+
+Phase 3 — WhatsApp
+Build:
+• Baileys integration
+• Multi-session manager
+• QR pairing
+• Persistent sessions
+• Message receiving
+• Message sending
+• Pharmacy-number mapping
+• WhatsApp status monitoring
+
+───
+
+Phase 4 — Orders
+Build:
+• Incoming message → order
+• Clinic identification
+• Pharmacy identification
+• Order number
+• Raw message storage
+• Attachments
+• Order statuses
+• Admin order view
+• Order timeline
+
+───
+
+Phase 5 — Pharmacy pricing
+Build:
+text
+TOTAL 850000
+
+parser.
+Then:
+text
+order.amount = 850000
+
+Add validation:
+• amount must be positive
+• currency must be UGX
+• order must be awaiting price
+• pharmacy must match order
+
+───
+
+Phase 6 — PesaPal
+Build:
+• authentication
+• pharmacy-specific credentials
+• SubmitOrderRequest
+• payment URL
+• callback
+• IPN
+• transaction verification
+• payment records
+• failed payment handling
+• duplicate payment protection
+PesaPal's documented API flow is authentication → SubmitOrderRequest → payment redirect → callback/status handling. 
+
+───
+
+Phase 7 — Afya Links payment page
+Build:
+text
+getafyalinks.com/pay/:order
+
+Include:
+• Afya Links logo
+• pharmacy name
+• order number
+• amount
+• currency
+• payment status
+• Pay Now
+• secure payment messaging
+
+───
+
+Phase 8 — Admin monitoring
+Build:
+• dashboard
+• orders
+• payments
+• pharmacies
+• WhatsApp
+• transaction history
+• audit logs
+• system health
+
+───
+
+46. WHAT NOT TO BUILD IN MVP
+Do not waste time on:
+❌ Pharmacy dashboard
+ ❌ Clinic dashboard
+ ❌ Drug catalogue
+ ❌ Inventory
+ ❌ Pharmacy stock management
+ ❌ Delivery management
+ ❌ Mobile application
+ ❌ Subscription billing
+ ❌ Complex analytics
+ ❌ AI ordering
+ ❌ Automated medicine substitution
+ ❌ Marketplace search
+ ❌ Pharmacy comparison
+ ❌ Escrow
+ ❌ Afya Links wallet
+First prove:
+WhatsApp → order → pharmacy price → payment → confirmation.
+
+───
+
+47. THE COMPLETE MVP FLOW
+This should be your acceptance test.
+Step 1
+Admin creates:
+Abacus Wholesale Pharmacy
+Step 2
+Admin enters Abacus's WhatsApp number.
+Step 3
+System creates Baileys session.
+Step 4
+Number is connected.
+text
+Abacus WhatsApp
+CONNECTED ✓
+
+Step 5
+Admin enters Abacus's PesaPal credentials.
+Step 6
+System verifies the credentials.
+text
+PesaPal
+CONNECTED ✓
+
+Step 7
+Clinic sends:
+I need 10 boxes Amoxicillin 500mg and 5 boxes Paracetamol.
+to Abacus's WhatsApp number.
+Step 8
+Afya Links receives it.
+Step 9
+Afya Links identifies:
+text
+Receiving number = Abacus
+
+Step 10
+Creates:
+text
+AFY-2026-000001
+
+Step 11
+Abacus receives the order.
+Step 12
+Abacus replies:
+text
+TOTAL 850000
+
+Step 13
+Afya Links records:
+text
+Amount = UGX 850,000
+
+Step 14
+Afya Links authenticates against Abacus's PesaPal account.
+Step 15
+Afya Links creates the PesaPal payment request.
+Step 16
+PesaPal returns payment URL.
+Step 17
+Afya Links creates:
+text
+https://getafyalinks.com/pay/AFY-2026-000001
+
+Step 18
+Clinic receives the link.
+Step 19
+Clinic opens it.
+Step 20
+Clinic clicks:
+PAY NOW
+Step 21
+Clinic completes payment through PesaPal.
+Step 22
+PesaPal sends callback/IPN.
+Step 23
+Afya Links verifies payment.
+Step 24
+Database becomes:
+text
+Order:
+PAID ✓
+
+Payment:
+COMPLETED ✓
+
+Step 25
+Afya Links sends confirmation to the clinic.
+Step 26
+Admin sees the complete transaction.
+Step 27
+Abacus can independently open its own PesaPal account and see the actual transaction/payment history there.
+
+───
+
+48. YOUR FINAL SYSTEM
+The finished MVP should effectively be:
+text
+GETAFYALINKS.COM
+                           │
+                           ▼
+                  ┌─────────────────┐
+                  │  AFYA LINKS     │
+                  │  SUPER ADMIN    │
+                  └────────┬────────┘
+                           │
+             ┌─────────────┼──────────────┐
+             │             │              │
+             ▼             ▼              ▼
+          SUPABASE       RAILWAY        VERCEL
+          Database       Backend        Frontend
+                           │
+             ┌─────────────┼─────────────┐
+             │             │             │
+             ▼             ▼             ▼
+          BAILEYS        PESAPAL       ORDERS
+             │             │
+             │             │
+      Pharmacy WA     Pharmacy's
+        Number        PesaPal Account
+             │             │
+             ▼             ▼
+           CLINIC ───── PAYMENT
+
+And the business logic is:
+The pharmacy's WhatsApp number determines the pharmacy.
+The pharmacy determines the final price.
+The pharmacy's PesaPal credentials determine where the payment transaction is processed.
+Afya Links controls the software and records the transaction.
+The clinic doesn't need an Afya Links account.
+The pharmacy doesn't need an Afya Links dashboard in the MVP.
+The public payment experience uses getafyalinks.com, not Railway.
+That is the MVP I would build first. It is substantially narrower than a full pharmacy-management platform, which is exactly why you can get a working version into production much faster.
