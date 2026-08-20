@@ -9,6 +9,7 @@ import qrcode from 'qrcode';
 import { logger } from '../../config/logger.js';
 import { createAuthState } from './store.js';
 import { handleIncomingMessage } from './messageHandler.js';
+import { supabaseAdmin } from '../../config/supabase.js';
 
 export type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED';
 
@@ -63,12 +64,14 @@ export class WhatsAppSession {
                     } else {
                         this.status = 'DISCONNECTED';
                         this.qrCode = null;
+                        await supabaseAdmin.from('whatsapp_accounts').update({ status: 'DISCONNECTED', last_disconnected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
                     }
                 } else if (connection === 'open') {
                     this.status = 'CONNECTED';
                     this.qrCode = null;
                     this.reconnectAttempts = 0;
                     logger.info(`Session ${this.sessionId} successfully connected`);
+                    await supabaseAdmin.from('whatsapp_accounts').update({ status: 'CONNECTED', last_connected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
                 }
             });
 

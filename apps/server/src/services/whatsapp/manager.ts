@@ -23,7 +23,7 @@ export class WhatsAppManager {
             const { data: accounts, error } = await supabaseAdmin
                 .from('whatsapp_accounts')
                 .select('session_id, pharmacy_id, phone_number')
-                .eq('status', 'ACTIVE'); // Assuming status column exists
+                .eq('status', 'CONNECTED');
 
             if (error) {
                 throw error;
