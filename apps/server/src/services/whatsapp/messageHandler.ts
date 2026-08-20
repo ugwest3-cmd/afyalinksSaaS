@@ -41,21 +41,32 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
         const pharmacyId = accountData.pharmacy_id;
 
         // 2. Use Gemini 2.5 Flash to classify intent and extract data
-        const prompt = `
-You are an AI assistant for Afya Links, a wholesale pharmacy ordering platform.
+        let systemPrompt = `You are an AI assistant for Afya Links, a wholesale pharmacy ordering platform.
 Your job is to analyze a WhatsApp message and determine if it is a NEW_ORDER from a clinic, or a PRICE_ASSIGNMENT from the pharmacy.
 
 Rules:
 - If the message contains a list of medicines, it is a NEW_ORDER.
 - If the message contains a total price (e.g., "TOTAL 850000", "50k", "the price is 15000"), it is a PRICE_ASSIGNMENT.
 - Extract the order number (e.g. AFY-XXXX-XXXXXX) if it appears in the message or the quoted message context.
-- Extract the price amount as a raw number if it's a PRICE_ASSIGNMENT.
+- Extract the price amount as a raw number if it's a PRICE_ASSIGNMENT.`;
+
+        try {
+            const { data } = await supabaseAdmin
+                .from('system_settings')
+                .select('system_prompt')
+                .eq('id', 1)
+                .single();
+            if (data?.system_prompt) systemPrompt = data.system_prompt;
+        } catch (e) {
+            // Ignore, use default
+        }
+
+        const prompt = `${systemPrompt}
 
 Message context:
 Sender is Pharmacy: ${isFromPharmacy}
 Message Text: "${messageText}"
-Quoted Message (if any): "${quotedText}"
-`;
+Quoted Message (if any): "${quotedText}"`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',

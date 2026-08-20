@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { 
-  LayoutDashboard, 
+  LayoutDashboard,
+  Bot,
+  Megaphone, 
   Store, 
   ShoppingCart, 
   CreditCard, 
@@ -26,6 +28,7 @@ const navItems = [
   { name: 'WhatsApp', href: '/admin/whatsapp', icon: MessageCircle },
   { name: 'Audit Log', href: '/admin/audit', icon: History },
   { name: 'System', href: '/admin/system', icon: Settings },
+  { name: 'AI & Campaigns', href: '/admin/ai-centre', icon: Bot },
 ];
 
 export default function AdminLayout({
