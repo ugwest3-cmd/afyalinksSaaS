@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@afya-links/shared": "workspace:*",
+    "@google/genai": "^2.18.0",
     "@hapi/boom": "^10.0.1",
     "@supabase/supabase-js": "^2.45.0",
     "@whiskeysockets/baileys": "^6.7.0",

@@ -75,12 +75,10 @@ export class WhatsAppSession {
             this.socket?.ev.on('messages.upsert', async (m) => {
                 if (m.type === 'notify') {
                     for (const msg of m.messages) {
-                        if (!msg.key.fromMe) {
-                            try {
-                                await handleIncomingMessage(this.sessionId, msg);
-                            } catch (error) {
-                                logger.error(error, `Error handling message for session ${this.sessionId}`);
-                            }
+                        try {
+                            await handleIncomingMessage(this.sessionId, msg);
+                        } catch (error) {
+                            logger.error(error, `Error handling message for session ${this.sessionId}`);
                         }
                     }
                 }

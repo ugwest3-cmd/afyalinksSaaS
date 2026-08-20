@@ -1,4 +1,8 @@
-import { WAMessage } from '@whiskeysockets/baileys';
+const fs = require('fs');
+
+const path = 'g:\\AFYA LINKS\\apps\\server\\src\\services\\whatsapp\\messageHandler.ts';
+
+const content = `import { WAMessage } from '@whiskeysockets/baileys';
 import { logger } from '../../config/logger.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -28,7 +32,7 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
 
         if (!messageText) return;
 
-        logger.info(`[Gemini Processing] Message on ${sessionId} (fromMe: ${isFromPharmacy}): ${messageText.substring(0, 50)}...`);
+        logger.info(\`[Gemini Processing] Message on \${sessionId} (fromMe: \${isFromPharmacy}): \${messageText.substring(0, 50)}...\`);
 
         // 1. Find pharmacy
         const { data: accountData } = await supabaseAdmin
@@ -41,7 +45,7 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
         const pharmacyId = accountData.pharmacy_id;
 
         // 2. Use Gemini 2.5 Flash to classify intent and extract data
-        const prompt = `
+        const prompt = \`
 You are an AI assistant for Afya Links, a wholesale pharmacy ordering platform.
 Your job is to analyze a WhatsApp message and determine if it is a NEW_ORDER from a clinic, or a PRICE_ASSIGNMENT from the pharmacy.
 
@@ -52,10 +56,10 @@ Rules:
 - Extract the price amount as a raw number if it's a PRICE_ASSIGNMENT.
 
 Message context:
-Sender is Pharmacy: ${isFromPharmacy}
-Message Text: "${messageText}"
-Quoted Message (if any): "${quotedText}"
-`;
+Sender is Pharmacy: \${isFromPharmacy}
+Message Text: "\${messageText}"
+Quoted Message (if any): "\${quotedText}"
+\`;
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -87,7 +91,7 @@ Quoted Message (if any): "${quotedText}"
         if (!resultText) throw new Error("Gemini returned empty response");
         
         const analysis = JSON.parse(resultText);
-        logger.info(`[Gemini Analysis] ${JSON.stringify(analysis)}`);
+        logger.info(\`[Gemini Analysis] \${JSON.stringify(analysis)}\`);
 
         // 3. Handle based on intent
         if (analysis.intent === 'PRICE_ASSIGNMENT' && analysis.amount && isFromPharmacy) {
@@ -100,7 +104,7 @@ Quoted Message (if any): "${quotedText}"
             // Look up the order ID by order_number
             const order = await orderService.getOrderByNumber(analysis.orderNumber);
             if (!order) {
-                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, `Could not find order ${analysis.orderNumber}.`);
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, \`Could not find order \${analysis.orderNumber}.\`);
                 return;
             }
 
@@ -113,17 +117,12 @@ Quoted Message (if any): "${quotedText}"
             // Send link back to the clinic's phone number!
             // Wait, we need the clinic's phone number
             const clinicPhone = order.customer_phone;
-            const msgToClinic = `Your order ${order.order_number} has been reviewed by the pharmacy.
-
-Total Amount: UGX ${analysis.amount.toLocaleString()}
-
-Please complete your payment securely here:
-${paymentLink}`;
+            const msgToClinic = \`Your order \${order.order_number} has been reviewed by the pharmacy.\n\nTotal Amount: UGX \${analysis.amount.toLocaleString()}\n\nPlease complete your payment securely here:\n\${paymentLink}\`;
             
-            await WhatsAppManager.getInstance().sendMessage(sessionId, `${clinicPhone}@s.whatsapp.net`, msgToClinic);
+            await WhatsAppManager.getInstance().sendMessage(sessionId, \`\${clinicPhone}@s.whatsapp.net\`, msgToClinic);
             
             // Confirm to pharmacy
-            await WhatsAppManager.getInstance().sendMessage(sessionId, jid, `✅ Price of UGX ${analysis.amount.toLocaleString()} set for ${order.order_number}. Payment link has been sent to the clinic.`);
+            await WhatsAppManager.getInstance().sendMessage(sessionId, jid, \`✅ Price of UGX \${analysis.amount.toLocaleString()} set for \${order.order_number}. Payment link has been sent to the clinic.\`);
             
         } else if (analysis.intent === 'NEW_ORDER' && !isFromPharmacy) {
             // Clinic is placing a new order
@@ -136,7 +135,7 @@ ${paymentLink}`;
             if (!clinicData) {
                 const { data: newClinic } = await supabaseAdmin
                     .from('clinics')
-                    .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}` })
+                    .insert({ phone_number: senderPhone, name: \`Clinic \${senderPhone}\` })
                     .select('id')
                     .single();
                 clinicData = newClinic;
@@ -154,15 +153,7 @@ ${paymentLink}`;
             // Note: For MVP, skipping complex media downloading, just noting it
             
             // Notify pharmacy owner (replying to the chat)
-            const notifyMsg = `🛒 *NEW AFYA LINKS ORDER*
-Order: ${order.order_number}
-Clinic: ${senderPhone}
-
-Details:
-${messageText}
-
-*Please review the order and reply with the total price (e.g. "TOTAL 50000").*
-(Make sure to reply directly to this message so I know which order it is!)`;
+            const notifyMsg = \`🛒 *NEW AFYA LINKS ORDER*\nOrder: \${order.order_number}\nClinic: \${senderPhone}\n\nDetails:\n\${messageText}\n\n*Please review the order and reply with the total price (e.g. "TOTAL 50000").*\n(Make sure to reply directly to this message so I know which order it is!)\`;
             
             await WhatsAppManager.getInstance().sendMessage(sessionId, jid, notifyMsg);
         } else {
@@ -170,6 +161,9 @@ ${messageText}
         }
 
     } catch (error) {
-        logger.error(error, `Error in Gemini handleIncomingMessage for session ${sessionId}:`);
+        logger.error(error, \`Error in Gemini handleIncomingMessage for session \${sessionId}:\`);
     }
 };
+`;
+
+fs.writeFileSync(path, content);
