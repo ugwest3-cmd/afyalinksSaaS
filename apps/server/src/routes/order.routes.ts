@@ -31,7 +31,18 @@ router.get('/admin/orders/:id', requireAuth, requireRole(['SUPER_ADMIN']), async
   res.json({ success: true, data: order });
 }));
 
+
+router.patch('/admin/orders/:id/price', requireAuth, requireRole(['SUPER_ADMIN']), asyncHandler(async (req, res) => {
+  const { amount } = req.body;
+  if (!amount || isNaN(amount)) {
+    return res.status(400).json({ success: false, error: 'Valid amount is required' });
+  }
+  const order = await orderService.updateOrderAmount(req.params.id, Number(amount));
+  res.json({ success: true, data: order });
+}));
+
 // Internal routes (requires auth)
+
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const { pharmacyId, clinicPhone, whatsappAccountId, originalMessage, attachments } = req.body;
   if (!pharmacyId || !clinicPhone || !whatsappAccountId || !originalMessage) {

@@ -1,4 +1,7 @@
-'use client';
+const fs = require('fs');
+const path = 'g:\\AFYA LINKS\\apps\\web\\src\\app\\admin\\orders\\[id]\\page.tsx';
+
+const newContent = `'use client';
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -23,7 +26,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
 
   const fetchOrder = async () => {
     try {
-      const data = await api.get(`/api/admin/orders/${params.id}`);
+      const data = await api.get(\`/api/admin/orders/\${params.id}\`);
       setOrder(data);
     } catch (error) {
       console.error(error);
@@ -42,7 +45,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     
     setIsSavingPrice(true);
     try {
-      await api.patch(`/api/admin/orders/${params.id}/price`, { amount: Number(priceAmount) });
+      await api.patch(\`/api/admin/orders/\${params.id}/price\`, { amount: Number(priceAmount) });
       setIsPriceModalOpen(false);
       setPriceAmount('');
       // Refresh order to get updated timeline and status
@@ -130,7 +133,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <div>
             <p className="text-sm text-[#6B7773]">Total Amount</p>
             <p className="font-medium text-[#17211E]">
-              {order.amount ? `UGX ${Number(order.amount).toLocaleString()}` : 'Pending'}
+              {order.amount ? \`UGX \${Number(order.amount).toLocaleString()}\` : 'Pending'}
             </p>
           </div>
         </Card>
@@ -217,3 +220,6 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
     </div>
   );
 }
+`;
+
+fs.writeFileSync(path, newContent);
