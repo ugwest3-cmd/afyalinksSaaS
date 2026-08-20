@@ -95,14 +95,14 @@ export default function OrdersPage() {
                   >
                     <TableCell className="font-medium">{order.order_number}</TableCell>
                     <TableCell>{order.pharmacy?.name || '-'}</TableCell>
-                    <TableCell>{order.clinic_phone}</TableCell>
+                    <TableCell>{order.customer_phone}</TableCell>
                     <TableCell>
-                      {order.total_amount ? `UGX ${Number(order.total_amount).toLocaleString()}` : '-'}
+                      {order.amount ? `UGX ${Number(order.amount).toLocaleString()}` : '-'}
                     </TableCell>
                     <TableCell>
                       <Badge className={
                         order.status === 'PAID' ? 'bg-[#16834B] text-white hover:bg-[#16834B]' :
-                        order.status === 'PENDING' ? 'bg-[#D98A00] text-white hover:bg-[#D98A00]' :
+                        order.status === 'RECEIVED' ? 'bg-[#D98A00] text-white hover:bg-[#D98A00]' :
                         'bg-[#6B7773] text-white hover:bg-[#6B7773]'
                       }>
                         {order.status}
