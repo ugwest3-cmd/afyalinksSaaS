@@ -185,7 +185,7 @@ export default function PharmaciesPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge className={getStatusColor(pharmacy.status as PharmacyStatus)} variant="secondary">
+                          <Badge className={getStatusColor(pharmacy.status as PharmacyStatus)} variant="default">
                             {pharmacy.status}
                           </Badge>
                         </TableCell>

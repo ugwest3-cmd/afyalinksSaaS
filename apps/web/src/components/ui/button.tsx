@@ -8,6 +8,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
   size?: 'sm' | 'md' | 'lg' | 'icon';
   loading?: boolean;

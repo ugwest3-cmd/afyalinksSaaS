@@ -97,7 +97,7 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
           </Link>
           <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-[#17211E]">{pharmacy.name}</h1>
-            <Badge className={getStatusColor(pharmacy.status)} variant="secondary">
+            <Badge className={getStatusColor(pharmacy.status)} variant="default">
               {pharmacy.status}
             </Badge>
           </div>
@@ -262,7 +262,7 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
             )}
             <div className="mt-4 text-center">
               <Link href={`/admin/orders?pharmacyId=${pharmacy.id}`}>
-                <Button variant="link" className="text-[#0B8F6A]">View All Orders</Button>
+                <Button variant="ghost" className="text-[#0B8F6A]">View All Orders</Button>
               </Link>
             </div>
           </CardContent>

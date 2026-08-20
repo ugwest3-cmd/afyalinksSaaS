@@ -8,6 +8,8 @@ export interface Pharmacy {
   phone: string;
   email: string | null;
   address: string | null;
+  whatsappConnected?: boolean;
+  pesapalConnected?: boolean;
   city: string | null;
   country: string;
   status: PharmacyStatus;
