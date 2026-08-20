@@ -88,7 +88,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           </p>
         </div>
         <div className="flex gap-2">
-          {(order.status === 'RECEIVED' || order.status === 'PENDING') && (
+          {order.status === 'RECEIVED' && (
             <>
               <Button onClick={() => setIsPriceModalOpen(true)} className="bg-[#0B8F6A] hover:bg-[#097859]">
                 <DollarSign className="w-4 h-4 mr-2" />
