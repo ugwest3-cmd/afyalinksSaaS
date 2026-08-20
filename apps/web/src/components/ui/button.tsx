@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   loading?: boolean;
 }
 
@@ -27,6 +27,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       sm: 'h-8 px-3 text-xs',
       md: 'h-10 px-4 py-2 text-sm',
       lg: 'h-12 px-8 text-base',
+      icon: 'h-10 w-10',
     };
 
     return (

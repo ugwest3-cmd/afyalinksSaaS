@@ -248,7 +248,7 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
                       <TableCell>{new Date(order.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>UGX {order.totalAmount.toLocaleString()}</TableCell>
                       <TableCell>
-                        <Badge variant="outline">{order.status}</Badge>
+                        <Badge variant="default">{order.status}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}

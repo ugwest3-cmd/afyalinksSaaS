@@ -55,7 +55,7 @@ export default function OrdersPage() {
             />
           </div>
           <div className="flex gap-2">
-            <Badge variant="outline" className="h-10 px-4 py-2 flex items-center gap-2 cursor-pointer bg-white text-[#6B7773] border-[#DCE7E3]">
+            <Badge variant="default" className="h-10 px-4 py-2 flex items-center gap-2 cursor-pointer bg-white text-[#6B7773] border-[#DCE7E3]">
               <Filter className="w-4 h-4" /> Filter
             </Badge>
           </div>
