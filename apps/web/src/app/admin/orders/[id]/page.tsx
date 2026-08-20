@@ -85,7 +85,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           </div>
           <div>
             <p className="text-sm text-[#6B7773]">Clinic Phone</p>
-            <p className="font-medium text-[#17211E]">{order.clinic_phone}</p>
+            <p className="font-medium text-[#17211E]">{order.customer_phone}</p>
           </div>
         </Card>
 
@@ -96,7 +96,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <div>
             <p className="text-sm text-[#6B7773]">Total Amount</p>
             <p className="font-medium text-[#17211E]">
-              {order.total_amount ? `UGX ${Number(order.total_amount).toLocaleString()}` : 'Pending'}
+              {order.amount ? `UGX ${Number(order.amount).toLocaleString()}` : 'Pending'}
             </p>
           </div>
         </Card>
@@ -130,11 +130,11 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
               <p className="text-xs text-[#6B7773]">{new Date(order.created_at).toLocaleString()}</p>
             </div>
 
-            {order.total_amount && (
+            {order.amount && (
               <div className="relative pl-6">
                 <div className="absolute w-3 h-3 bg-[#0B8F6A] rounded-full -left-[7px] top-1.5" />
                 <p className="text-sm font-medium text-[#17211E]">Amount Set</p>
-                <p className="text-xs text-[#6B7773]">Amount updated to UGX {Number(order.total_amount)}</p>
+                <p className="text-xs text-[#6B7773]">Amount updated to UGX {Number(order.amount)}</p>
               </div>
             )}
 
