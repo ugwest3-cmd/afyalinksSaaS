@@ -1,4 +1,7 @@
-'use client';
+const fs = require('fs');
+const path = 'g:\\AFYA LINKS\\apps\\web\\src\\app\\admin\\whatsapp\\page.tsx';
+
+const content = `'use client';
 
 import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
@@ -55,7 +58,7 @@ export default function WhatsAppPage() {
       interval = setInterval(async () => {
         try {
           // Check status first
-          const statusRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/status`);
+          const statusRes = await api.get(\`/api/admin/whatsapp/\${activeSessionId}/status\`);
           if (statusRes?.status) {
             setQrStatus(statusRes.status);
             if (statusRes.status === 'CONNECTED') {
@@ -68,7 +71,7 @@ export default function WhatsAppPage() {
 
           // Fetch QR if ready
           if (statusRes?.status === 'QR_READY' || qrStatus === 'INITIALIZING') {
-            const qrRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/qr`);
+            const qrRes = await api.get(\`/api/admin/whatsapp/\${activeSessionId}/qr\`);
             if (qrRes?.qrCode) {
               setQrCode(qrRes.qrCode);
             }
@@ -110,7 +113,7 @@ export default function WhatsAppPage() {
   const handleDisconnect = async (sessionId: string) => {
     if (!confirm('Are you sure you want to disconnect this number?')) return;
     try {
-      await api.post(`/api/admin/whatsapp/${sessionId}/disconnect`, {});
+      await api.post(\`/api/admin/whatsapp/\${sessionId}/disconnect\`, {});
       fetchData();
     } catch (error) {
       alert('Failed to disconnect');
@@ -119,7 +122,7 @@ export default function WhatsAppPage() {
 
   const handleReconnect = async (sessionId: string) => {
     try {
-      await api.post(`/api/admin/whatsapp/${sessionId}/reconnect`, {});
+      await api.post(\`/api/admin/whatsapp/\${sessionId}/reconnect\`, {});
       alert('Reconnection initiated');
       fetchData();
     } catch (error) {
@@ -187,10 +190,10 @@ export default function WhatsAppPage() {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
+                        <div className={\`w-2 h-2 rounded-full \${
                           session.status === 'CONNECTED' ? 'bg-[#16834B]' : 
                           session.status === 'QR_READY' ? 'bg-[#D98A00]' : 'bg-[#D64545]'
-                        }`} />
+                        }\`} />
                         <span className="text-sm font-medium">{session.status}</span>
                       </div>
                     </TableCell>
@@ -285,3 +288,6 @@ export default function WhatsAppPage() {
     </div>
   );
 }
+`;
+
+fs.writeFileSync(path, content);
