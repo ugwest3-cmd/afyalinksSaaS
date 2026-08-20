@@ -34,7 +34,7 @@ export default function OrdersPage() {
 
   const filteredOrders = orders.filter(o => 
     o.order_number.toLowerCase().includes(search.toLowerCase()) ||
-    o.clinic_phone.includes(search)
+    o.customer_phone.includes(search)
   );
 
   return (
