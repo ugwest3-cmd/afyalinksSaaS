@@ -60,7 +60,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           </p>
         </div>
         <div className="flex gap-2">
-          {order.status === 'PENDING' && (
+          {order.status === 'RECEIVED' && (
             <Button variant="outline" className="border-[#D64545] text-[#D64545] hover:bg-[#FEF2F2]">
               Cancel Order
             </Button>
