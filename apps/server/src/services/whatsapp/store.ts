@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { useMultiFileAuthState } from '@whiskeysockets/baileys';
-import { logger } from '@/config/logger.js';
+import { logger } from '../../config/logger.js';
 
 const SESSIONS_DIR = path.resolve(process.cwd(), 'whatsapp_sessions');
 

@@ -6,7 +6,7 @@ import makeWASocket, {
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode';
-import { logger } from '@/config/logger.js';
+import { logger } from '../../config/logger.js';
 import { createAuthState } from './store.js';
 import { handleIncomingMessage } from './messageHandler.js';
 
