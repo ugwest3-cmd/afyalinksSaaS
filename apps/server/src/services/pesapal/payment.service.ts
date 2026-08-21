@@ -37,27 +37,25 @@ export class PaymentService {
       }
 
       // 5. Decrypt credentials
-      const consumerKey = await encryptionService.decrypt(paymentAccount.credentials.consumer_key);
-      const consumerSecret = await encryptionService.decrypt(paymentAccount.credentials.consumer_secret);
+      const consumerKey = await encryptionService.decrypt(paymentAccount.consumer_key_encrypted);
+      const consumerSecret = await encryptionService.decrypt(paymentAccount.consumer_secret_encrypted);
 
       // 6. Create client
-      const environment = paymentAccount.credentials.environment === 'LIVE' ? 'LIVE' : 'SANDBOX';
+      const environment = paymentAccount.environment === 'LIVE' ? 'LIVE' : 'SANDBOX';
       const pesapalClient = new PesaPalClient(consumerKey, consumerSecret, environment);
 
       // 7. Authenticate
       await pesapalClient.authenticate();
 
       // 8. Register IPN
-      let ipnId = paymentAccount.credentials.ipn_id;
+      let ipnId = paymentAccount.ipn_id;
       if (!ipnId) {
         const ipnResponse = await pesapalClient.registerIPN(`${env.BACKEND_URL}/payments/pesapal/ipn`);
         ipnId = ipnResponse.ipn_id;
         
         await supabaseAdmin
           .from('payment_accounts')
-          .update({
-            credentials: { ...paymentAccount.credentials, ipn_id: ipnId }
-          })
+          .update({ ipn_id: ipnId })
           .eq('id', paymentAccount.id);
       }
 
@@ -155,11 +153,11 @@ export class PaymentService {
         throw new Error('Pharmacy credentials not found');
       }
 
-      const consumerKey = await encryptionService.decrypt(paymentAccount.credentials.consumer_key);
-      const consumerSecret = await encryptionService.decrypt(paymentAccount.credentials.consumer_secret);
+      const consumerKey = await encryptionService.decrypt(paymentAccount.consumer_key_encrypted);
+      const consumerSecret = await encryptionService.decrypt(paymentAccount.consumer_secret_encrypted);
 
       // 3. Create client
-      const environment = paymentAccount.credentials.environment === 'LIVE' ? 'LIVE' : 'SANDBOX';
+      const environment = paymentAccount.environment === 'LIVE' ? 'LIVE' : 'SANDBOX';
       const pesapalClient = new PesaPalClient(consumerKey, consumerSecret, environment);
 
       // 4. Call status

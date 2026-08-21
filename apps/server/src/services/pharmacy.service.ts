@@ -3,7 +3,7 @@ import { logAction } from './audit.service.js';
 import { encrypt } from './encryption.service.js';
 
 export const createPharmacy = async (data: any, adminId: string) => {
-  const { pesapal_consumer_key, pesapal_consumer_secret, ...pharmacyData } = data;
+  const { pesapal_consumer_key, pesapal_consumer_secret, pesapal_environment, ...pharmacyData } = data;
 
   const { data: pharmacy, error } = await supabaseAdmin
     .from('pharmacies')
@@ -18,8 +18,9 @@ export const createPharmacy = async (data: any, adminId: string) => {
       .from('payment_accounts')
       .insert([{
         pharmacy_id: pharmacy.id,
-        pesapal_consumer_key: encrypt(pesapal_consumer_key),
-        pesapal_consumer_secret: encrypt(pesapal_consumer_secret),
+        consumer_key_encrypted: encrypt(pesapal_consumer_key),
+        consumer_secret_encrypted: encrypt(pesapal_consumer_secret),
+        environment: pesapal_environment || 'SANDBOX',
         status: 'ACTIVE'
       }]);
     if (paymentError) throw new Error(paymentError.message);
@@ -68,14 +69,49 @@ export const getPharmacyById = async (id: string) => {
 };
 
 export const updatePharmacy = async (id: string, data: any, adminId: string) => {
+  const { pesapal_consumer_key, pesapal_consumer_secret, pesapal_environment, ...pharmacyData } = data;
+
   const { data: pharmacy, error } = await supabaseAdmin
     .from('pharmacies')
-    .update(data)
+    .update(pharmacyData)
     .eq('id', id)
     .select()
     .single();
 
   if (error) throw new Error(error.message);
+
+  if (pesapal_consumer_key || pesapal_consumer_secret || pesapal_environment) {
+    // Check if account exists
+    const { data: existingAccount } = await supabaseAdmin
+      .from('payment_accounts')
+      .select('id')
+      .eq('pharmacy_id', id)
+      .eq('provider', 'pesapal')
+      .single();
+
+    const accountData: any = {};
+    if (pesapal_consumer_key) accountData.consumer_key_encrypted = encrypt(pesapal_consumer_key);
+    if (pesapal_consumer_secret) accountData.consumer_secret_encrypted = encrypt(pesapal_consumer_secret);
+    if (pesapal_environment) accountData.environment = pesapal_environment;
+
+    if (existingAccount) {
+      const { error: updateError } = await supabaseAdmin
+        .from('payment_accounts')
+        .update(accountData)
+        .eq('id', existingAccount.id);
+      if (updateError) throw new Error(updateError.message);
+    } else {
+      const { error: insertError } = await supabaseAdmin
+        .from('payment_accounts')
+        .insert([{
+          pharmacy_id: id,
+          provider: 'pesapal',
+          ...accountData,
+          status: 'ACTIVE'
+        }]);
+      if (insertError) throw new Error(insertError.message);
+    }
+  }
 
   await logAction(adminId, 'UPDATE', 'PHARMACY', id, { updatedData: data });
 

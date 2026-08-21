@@ -58,6 +58,7 @@ export default function NewPharmacyPage() {
         status: 'ACTIVE',
         pesapal_consumer_key: formData.pesapalConsumerKey || undefined,
         pesapal_consumer_secret: formData.pesapalConsumerSecret || undefined,
+        pesapal_environment: formData.pesapalEnvironment
       };
       const response = await api.post('/api/admin/pharmacies', payload);
       router.push('/admin/pharmacies');
