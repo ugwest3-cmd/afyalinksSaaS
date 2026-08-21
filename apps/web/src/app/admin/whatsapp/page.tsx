@@ -21,6 +21,7 @@ export default function WhatsAppPage() {
   const [selectedPharmacy, setSelectedPharmacy] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   // QR Modal State
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
@@ -59,6 +60,9 @@ export default function WhatsAppPage() {
           const statusRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/status`);
           if (statusRes?.status) {
             setQrStatus(statusRes.status);
+            if (statusRes.lastError) {
+              setModalError(statusRes.lastError);
+            }
             if (statusRes.status === 'CONNECTED') {
               setIsQrModalOpen(false);
               fetchData(); // Refresh list
@@ -97,6 +101,7 @@ export default function WhatsAppPage() {
         setActiveSessionId(res.sessionId);
         setQrStatus('INITIALIZING');
         setQrCode(null);
+        setModalError(null);
         setIsQrModalOpen(true);
         setSelectedPharmacy('');
         setPhoneNumber('');
@@ -132,6 +137,7 @@ export default function WhatsAppPage() {
     setActiveSessionId(sessionId);
     setQrStatus('INITIALIZING');
     setQrCode(null);
+    setModalError(null);
     setIsQrModalOpen(true);
   };
 
@@ -284,7 +290,7 @@ export default function WhatsAppPage() {
                 <div className="text-red-500 space-y-2">
                   <p className="font-bold">Connection Failed</p>
                   <p className="text-sm bg-red-50 p-2 rounded border border-red-100 break-all max-w-sm">
-                    {sessions.find(s => s.sessionId === activeSessionId)?.lastError || 'Unknown error occurred'}
+                    {modalError || 'Unknown error occurred'}
                   </p>
                 </div>
               ) : (
