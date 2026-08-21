@@ -3,7 +3,8 @@ import {
     DisconnectReason, 
     useMultiFileAuthState, 
     WAMessage, 
-    WASocket 
+    WASocket,
+    Browsers
 } from '@whiskeysockets/baileys';
 import { Boom } from '@hapi/boom';
 import qrcode from 'qrcode';
@@ -43,7 +44,7 @@ export class WhatsAppSession {
                 auth: state,
                 printQRInTerminal: false,
                 logger: logger.child({ module: 'baileys', sessionId: this.sessionId }) as any,
-                browser: ['Afya Links', 'Chrome', '1.0.0']
+                browser: Browsers.macOS('Desktop')
             });
 
             this.socket?.ev.on('creds.update', saveCreds);
