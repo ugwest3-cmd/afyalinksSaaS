@@ -33,20 +33,19 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
   useEffect(() => {
     const fetchPharmacy = async () => {
       try {
-        const response = await api.get(`/api/admin/pharmacies/${params.id}`);
-        const data = response.data;
+        const data = await api.get(`/api/admin/pharmacies/${params.id}`);
         setFormData({
           name: data.name || '',
-          legalName: data.legalName || '',
+          legalName: data.legal_name || '',
           phone: data.phone || '',
           email: data.email || '',
           address: data.address || '',
           city: data.city || '',
           country: data.country || 'Uganda',
-          whatsappNumber: data.whatsappNumber || '',
-          pesapalConsumerKey: data.pesapalConsumerKey || '',
+          whatsappNumber: data.whatsapp_number || '',
+          pesapalConsumerKey: data.pesapal_consumer_key || '',
           pesapalConsumerSecret: '', // Keep empty for security unless changing
-          pesapalEnvironment: data.pesapalEnvironment || 'SANDBOX'
+          pesapalEnvironment: data.pesapal_environment || 'SANDBOX'
         });
       } catch (err: any) {
         setError(err.message || 'Failed to load pharmacy details');
@@ -74,11 +73,25 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
     }
 
     try {
-      const dataToSubmit = { ...formData };
-      if (!dataToSubmit.pesapalConsumerSecret) {
-        delete (dataToSubmit as any).pesapalConsumerSecret;
+      const payload = {
+        name: formData.name,
+        legal_name: formData.legalName || null,
+        phone: formData.phone,
+        email: formData.email || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        country: formData.country || 'Uganda',
+        whatsapp_number: formData.whatsappNumber || null,
+        pesapal_consumer_key: formData.pesapalConsumerKey || undefined,
+        pesapal_consumer_secret: formData.pesapalConsumerSecret || undefined,
+        pesapal_environment: formData.pesapalEnvironment
+      };
+      
+      if (!payload.pesapal_consumer_secret) {
+        delete (payload as any).pesapal_consumer_secret;
       }
-      await api.patch(`/api/admin/pharmacies/${params.id}`, dataToSubmit);
+      
+      await api.patch(`/api/admin/pharmacies/${params.id}`, payload);
       router.push(`/admin/pharmacies/${params.id}`);
     } catch (err: any) {
       setError(err.message || 'Failed to update pharmacy');

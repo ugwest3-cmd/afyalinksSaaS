@@ -29,7 +29,7 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
     setLoading(true);
     try {
       const response = await api.get(`/api/admin/pharmacies/${params.id}`);
-      setPharmacy(response.data);
+      setPharmacy(response);
     } catch (err: any) {
       setError(err.message || 'Failed to load pharmacy details');
     } finally {
