@@ -50,7 +50,7 @@ export class PaymentService {
       // 8. Register IPN
       let ipnId = paymentAccount.ipn_id;
       if (!ipnId) {
-        const ipnResponse = await pesapalClient.registerIPN(`${env.BACKEND_URL}/payments/pesapal/ipn`);
+        const ipnResponse = await pesapalClient.registerIPN(`${env.BACKEND_URL}/api/payments/pesapal/ipn`);
         ipnId = ipnResponse.ipn_id;
         
         await supabaseAdmin
