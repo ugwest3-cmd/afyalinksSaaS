@@ -23,12 +23,13 @@ router.post('/connect', async (req: Request, res: Response) => {
         const sessionId = `wa_${uuidv4().replace(/-/g, '')}`;
 
         // Save to DB
-        const { error } = await supabaseAdmin.from('whatsapp_accounts').insert({
+        const { error } = await supabaseAdmin.from('whatsapp_accounts').upsert({
             session_id: sessionId,
             pharmacy_id: pharmacyId,
             phone_number: phoneNumber,
-            status: 'PENDING'
-        });
+            status: 'PENDING',
+            updated_at: new Date().toISOString()
+        }, { onConflict: 'phone_number' });
 
         if (error) {
             throw error;
