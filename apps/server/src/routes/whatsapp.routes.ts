@@ -27,7 +27,7 @@ router.post('/connect', async (req: Request, res: Response) => {
             session_id: sessionId,
             pharmacy_id: pharmacyId,
             phone_number: phoneNumber,
-            status: 'INITIALIZING'
+            status: 'PENDING'
         });
 
         if (error) {
