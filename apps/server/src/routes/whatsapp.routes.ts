@@ -16,8 +16,15 @@ router.post('/connect', async (req: Request, res: Response) => {
     try {
         const { pharmacyId, phoneNumber } = req.body;
 
-        if (!pharmacyId || !phoneNumber) {
-            return res.status(400).json({ error: 'pharmacyId and phoneNumber are required' });
+        if (!phoneNumber) {
+            return res.status(400).json({ error: 'phoneNumber is required' });
+        }
+
+        const isSystem = !pharmacyId;
+
+        // If setting a new system number, optionally disable previous ones
+        if (isSystem) {
+            await supabaseAdmin.from('whatsapp_accounts').update({ is_system: false }).neq('id', '00000000-0000-0000-0000-000000000000');
         }
 
         const sessionId = `wa_${uuidv4().replace(/-/g, '')}`;
@@ -25,9 +32,10 @@ router.post('/connect', async (req: Request, res: Response) => {
         // Save to DB
         const { error } = await supabaseAdmin.from('whatsapp_accounts').upsert({
             session_id: sessionId,
-            pharmacy_id: pharmacyId,
+            pharmacy_id: pharmacyId || null,
             phone_number: phoneNumber,
             status: 'PENDING',
+            is_system: isSystem,
             updated_at: new Date().toISOString()
         }, { onConflict: 'phone_number' });
 
@@ -35,7 +43,7 @@ router.post('/connect', async (req: Request, res: Response) => {
             throw error;
         }
 
-        await whatsappManager.createSession(sessionId, pharmacyId, phoneNumber, true);
+        await whatsappManager.createSession(sessionId, pharmacyId || 'system', phoneNumber, true);
 
         res.status(201).json({ sessionId, message: 'Session created and connecting' });
     } catch (error: any) {
@@ -102,10 +110,23 @@ router.post('/:sessionId/reconnect', async (req: Request, res: Response) => {
 router.post('/:sessionId/disconnect', async (req: Request, res: Response) => {
     try {
         const { sessionId } = req.params;
-        await whatsappManager.disconnectSession(sessionId);
-        res.status(200).json({ message: 'Session disconnected' });
+        
+        // Disconnect Baileys socket if active
+        try {
+            await whatsappManager.disconnectSession(sessionId);
+        } catch (e) {
+            logger.warn(`Session ${sessionId} was not active in memory during disconnect.`);
+        }
+        
+        // Remove from DB
+        await supabaseAdmin.from('whatsapp_accounts').delete().eq('session_id', sessionId);
+        
+        // Remove from memory completely
+        whatsappManager.removeSessionFromMemory(sessionId);
+
+        res.status(200).json({ message: 'Session deleted' });
     } catch (error: any) {
-        res.status(404).json({ error: error.message });
+        res.status(500).json({ error: error.message });
     }
 });
 

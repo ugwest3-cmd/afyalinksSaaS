@@ -90,6 +90,10 @@ export class WhatsAppManager {
         await session.disconnect();
     }
 
+    public removeSessionFromMemory(sessionId: string): void {
+        this.sessions.delete(sessionId);
+    }
+
     public async reconnectSession(sessionId: string): Promise<void> {
         const session = this.getSession(sessionId);
         if (!session) {

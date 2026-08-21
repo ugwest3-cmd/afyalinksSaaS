@@ -26,6 +26,7 @@ const navItems = [
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard },
   { name: 'WhatsApp', href: '/admin/whatsapp', icon: MessageCircle },
+  { name: 'Afya Links HQ', href: '/admin/hq', icon: Bot },
   { name: 'Audit Log', href: '/admin/audit', icon: History },
   { name: 'System', href: '/admin/system', icon: Settings },
   { name: 'AI & Campaigns', href: '/admin/ai-centre', icon: Bot },
