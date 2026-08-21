@@ -33,6 +33,16 @@ export class WhatsAppSession {
             this.status = 'INITIALIZING';
             this.lastError = null;
             
+            // Ensure Chrome is installed in the local cache
+            try {
+                logger.info(`Checking/installing Chromium for session ${this.sessionId}...`);
+                const { execSync } = await import('child_process');
+                execSync('npx puppeteer browsers install chrome', { stdio: 'inherit' });
+                logger.info('Chromium installation verified.');
+            } catch (e) {
+                logger.error(e, 'Failed to run puppeteer browsers install');
+            }
+
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
@@ -49,8 +59,7 @@ export class WhatsAppSession {
                         '--no-zygote',
                         '--disable-gpu',
                         '--single-process'
-                    ],
-                    executablePath: process.env.CHROME_BIN || '/usr/bin/chromium'
+                    ]
                 }
             });
 
