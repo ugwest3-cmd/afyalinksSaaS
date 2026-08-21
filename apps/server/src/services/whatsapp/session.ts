@@ -53,9 +53,13 @@ export class WhatsAppSession {
                 const { connection, lastDisconnect, qr } = update;
 
                 if (qr) {
-                    this.qrCode = await qrcode.toDataURL(qr);
-                    this.status = 'QR_READY';
-                    logger.info(`QR code generated for session ${this.sessionId}`);
+                    try {
+                        this.qrCode = await qrcode.toDataURL(qr);
+                        this.status = 'QR_READY';
+                        logger.info(`QR code generated for session ${this.sessionId}`);
+                    } catch (err) {
+                        logger.error(err, `Failed to generate QR code data URL for session ${this.sessionId}`);
+                    }
                 }
 
                 if (connection === 'close') {
