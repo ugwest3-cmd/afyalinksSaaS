@@ -1,7 +1,6 @@
 [phases.setup]
 nixPkgs = [
   "...",
-  "chromium",
   "nss",
   "freetype",
   "harfbuzz",
@@ -15,6 +14,9 @@ nixPkgs = [
   "alsa-lib",
   "mesa"
 ]
+
+[variables]
+PUPPETEER_CACHE_DIR = "/app/.cache/puppeteer"
 
 [phases.build]
 cmds = ["pnpm install --no-frozen-lockfile", "pnpm build"]

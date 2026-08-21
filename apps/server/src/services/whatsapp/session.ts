@@ -32,6 +32,11 @@ export class WhatsAppSession {
             logger.info(`Starting connection for session ${this.sessionId}`);
             this.status = 'INITIALIZING';
             
+            // Force puppeteer to use local cache if env var isn't loaded yet
+            if (!process.env.PUPPETEER_CACHE_DIR) {
+                process.env.PUPPETEER_CACHE_DIR = '/app/.cache/puppeteer';
+            }
+            
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
