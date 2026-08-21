@@ -9,6 +9,7 @@ import { logger } from './config/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { routes } from './routes/index.js';
+import { WhatsAppManager } from './services/whatsapp/manager.js';
 
 const app = express();
 
@@ -21,6 +22,11 @@ app.use('/api', routes);
 
 app.get('/', (req, res) => {
   res.send('Afya Links Backend is running perfectly! 🚀');
+});
+
+// Initialize WhatsApp sessions in the background
+WhatsAppManager.getInstance().initialize().catch(err => {
+    logger.error(err, 'Failed to initialize WhatsApp Manager on startup');
 });
 
 app.use(errorHandler);
