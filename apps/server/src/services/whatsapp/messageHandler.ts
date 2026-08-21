@@ -73,6 +73,17 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
              historyContents.push({ role: 'user', parts: [{ text: messageText }] });
         }
 
+        // Gemini requires alternating roles. Collapse consecutive messages with the same role.
+        const collapsedHistory: any[] = [];
+        for (const msg of historyContents) {
+            if (collapsedHistory.length > 0 && collapsedHistory[collapsedHistory.length - 1].role === msg.role) {
+                collapsedHistory[collapsedHistory.length - 1].parts[0].text += `\n\n${msg.parts[0].text}`;
+            } else {
+                collapsedHistory.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
+            }
+        }
+        historyContents = collapsedHistory;
+
 
         if (accountData.is_system) {
             // ==========================================
@@ -192,20 +203,20 @@ INTENTS:
             let clinicData: any = null;
             let isOnboarding = false;
 
-            const { data } = await supabaseAdmin.from('clinics').select('*').eq('phone_number', senderPhone).single();
+            const { data } = await supabaseAdmin.from('clinics').select('*').eq('phone', senderPhone).single();
             clinicData = data;
 
             if (!clinicData) {
                 const { data: newClinic, error: insertError } = await supabaseAdmin
                     .from('clinics')
-                    .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' })
+                    .insert({ phone: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' })
                     .select('*')
                     .single();
                     
                 if (insertError) {
                     logger.error(insertError, `Failed to create clinic for ${senderPhone}`);
                 }
-                clinicData = newClinic || { phone_number: senderPhone };
+                clinicData = newClinic || { phone: senderPhone };
             }
 
             isOnboarding = !clinicData?.preferred_driver_name;
@@ -304,7 +315,7 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
                     preferred_driver_name: analysis.clinicDetails.driverName,
                     preferred_driver_phone: analysis.clinicDetails.driverPhone,
                     additional_phones: analysis.clinicDetails.additionalPhones
-                }).eq('phone_number', senderPhone);
+                }).eq('phone', senderPhone);
 
                 const successMsg = `✅ Welcome to Afya Links, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
                 await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);

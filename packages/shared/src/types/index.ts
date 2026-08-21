@@ -28,6 +28,9 @@ export interface Clinic {
   email: string | null;
   facility_type: string | null;
   location: string | null;
+  preferred_driver_name?: string;
+  preferred_driver_phone?: string;
+  additional_phones?: string[];
   status: string;
   created_at: string;
   updated_at: string;
