@@ -1,4 +1,5 @@
-import makeWASocket, { 
+import { 
+    makeWASocket,
     DisconnectReason, 
     useMultiFileAuthState, 
     WAMessage, 
@@ -19,6 +20,7 @@ export class WhatsAppSession {
     public phoneNumber: string;
     public status: SessionStatus = 'INITIALIZING';
     public qrCode: string | null = null;
+    public lastError: string | null = null;
     
     private socket: WASocket | null = null;
     private reconnectAttempts = 0;
