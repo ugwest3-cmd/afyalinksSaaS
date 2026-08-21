@@ -1,3 +1,4 @@
+import NodeCache from 'node-cache';
 import { 
     makeWASocket,
     DisconnectReason, 
@@ -26,6 +27,7 @@ export class WhatsAppSession {
     private socket: WASocket | null = null;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
+    private msgRetryCounterCache = new NodeCache(); // REQUIRED for newer Baileys
 
     constructor(sessionId: string, pharmacyId: string, phoneNumber: string) {
         this.sessionId = sessionId;
@@ -43,14 +45,29 @@ export class WhatsAppSession {
             this.socket = makeWASocket({
                 auth: state,
                 printQRInTerminal: false,
-                browser: Browsers.macOS('Desktop')
+                browser: Browsers.macOS('Desktop'),
+                msgRetryCounterCache: this.msgRetryCounterCache,
+                generateHighQualityLinkPreview: false, // Prevents hanging on link generation
+                syncFullHistory: false, // Prevents downloading huge histories on init
+                connectTimeoutMs: 60000,
+                keepAliveIntervalMs: 10000,
+                emitOwnEvents: true,
+                markOnlineOnConnect: true
             });
 
             // Fallback timeout in case Baileys hangs silently
             const initTimeout = setTimeout(() => {
                 if (this.status === 'INITIALIZING') {
-                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 15s. Forcing fail.`);
+                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 15s. Forcing ws close.`);
                     this.status = 'FAILED';
+                    this.lastError = 'WebSocket connection timed out (Network or IPv6 issue)';
+                    
+                    // Force destroy the underlying websocket to unblock memory
+                    if (this.socket && (this.socket as any).ws) {
+                        try {
+                            (this.socket as any).ws.close();
+                        } catch(e) {}
+                    }
                     this.disconnect();
                 }
             }, 15000);
