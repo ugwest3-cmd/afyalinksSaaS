@@ -101,12 +101,16 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
             clinicData = data;
 
             if (!clinicData) {
-                const { data: newClinic } = await supabaseAdmin
+                const { data: newClinic, error: insertError } = await supabaseAdmin
                     .from('clinics')
                     .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' })
                     .select('*')
                     .single();
-                clinicData = newClinic;
+                    
+                if (insertError) {
+                    logger.error(insertError, `Failed to create clinic for ${senderPhone}`);
+                }
+                clinicData = newClinic || { phone_number: senderPhone };
             }
 
             isOnboarding = !clinicData?.preferred_driver_name;
@@ -165,7 +169,7 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
             }
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
+                model: 'gemini-2.0-flash',
                 contents: historyContents,
                 config: {
                     systemInstruction: systemPrompt,
@@ -258,7 +262,17 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
             }
         }
 
-    } catch (error) {
+    } catch (error: any) {
         logger.error(error, `Error in handleIncomingMessage for session ${sessionId}:`);
+        
+        // Let the user know the AI is down if this was a user message
+        const jid = message.from;
+        if (jid && !message.fromMe) {
+            try {
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, "I'm sorry, my AI systems are temporarily unavailable. Please try again in a few minutes or contact support directly.");
+            } catch (e) {
+                // Ignore send errors in error handler
+            }
+        }
     }
 };

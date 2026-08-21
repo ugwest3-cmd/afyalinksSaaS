@@ -34,7 +34,7 @@ export const createPharmacy = async (data: any, adminId: string) => {
 export const getPharmacies = async ({ page = 1, limit = 10, status, search }: any) => {
   let query = supabaseAdmin
     .from('pharmacies')
-    .select('*', { count: 'exact' });
+    .select('*, whatsapp_accounts(status), payment_accounts(status)', { count: 'exact' });
 
   if (status) query = query.eq('status', status);
   if (search) query = query.ilike('name', `%${search}%`);
@@ -45,7 +45,13 @@ export const getPharmacies = async ({ page = 1, limit = 10, status, search }: an
 
   if (error) throw new Error(error.message);
 
-  return { data, count, page, limit };
+  const formattedData = data.map(p => ({
+    ...p,
+    whatsappConnected: p.whatsapp_accounts?.some((wa: any) => wa.status === 'CONNECTED'),
+    pesapalConnected: p.payment_accounts?.some((pa: any) => pa.status === 'ACTIVE')
+  }));
+
+  return { data: formattedData, count, page, limit };
 };
 
 export const getPharmacyById = async (id: string) => {
