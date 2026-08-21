@@ -112,28 +112,54 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
             isOnboarding = !clinicData?.preferred_driver_name;
             await saveChatLog(senderPhone, sessionId, 'user', messageText);
 
-            let systemPrompt = `You are an AI assistant for a wholesale pharmacy. You are taking orders from clinics.`;
+            let systemPrompt = `You are the AI assistant for a wholesale pharmacy on Afya Links.
+You receive messages from local clinics. Your job is to be extremely helpful, professional, and concise.
+
+If the user wants to buy or order something, your intent MUST be 'NEW_ORDER'.
+Do not ask for confirmation before placing an order. If they list items, just set intent to 'NEW_ORDER'.
+
+If they are just saying hello, asking a general question, or chatting, set intent to 'CONVERSATIONAL_REPLY' and write a friendly response in 'replyText'.`;
             
             try {
                 const { data: promptData } = await supabaseAdmin.from('system_settings').select('system_prompt').eq('id', 1).single();
                 if (promptData?.system_prompt) systemPrompt = promptData.system_prompt;
             } catch (e) {}
 
-            let historyContents: any[] = [];
-            
             if (isOnboarding) {
-                systemPrompt += `\nThe clinic sending this message is currently ONBOARDING. Collect their Clinic Name, Location, and Driver Details (Name/Phone). Use CONVERSATIONAL_REPLY intent to ask questions. Once everything is collected, use ONBOARDING_COMPLETE intent and fill clinicDetails.`;
-                try {
-                    const { data: logs } = await supabaseAdmin.from('chat_logs').select('role, content').eq('phone_number', senderPhone).order('created_at', { ascending: false }).limit(10);
-                    if (logs) {
-                        historyContents = logs.reverse().map((l: any) => ({
-                            role: l.role === 'model' ? 'model' : 'user',
-                            parts: [{ text: l.content }]
-                        }));
-                    }
-                } catch (e) {}
+                systemPrompt += `\n\nCRITICAL: The clinic sending this message is currently ONBOARDING. We don't have their full details yet.
+You MUST collect the following information from them conversationally:
+1. Clinic Name
+2. Location (City/Neighborhood)
+3. Preferred Delivery Driver Name
+4. Preferred Delivery Driver Phone Number
+
+Ask for these details one by one or all at once naturally. Set intent to 'CONVERSATIONAL_REPLY' to ask questions.
+ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE' and populate the 'clinicDetails' object.`;
+            } else {
+                systemPrompt += `\n\nThe clinic's account is fully set up. If they list medicines, set intent to 'NEW_ORDER'. Do NOT say you will place the order in 'replyText', just use 'NEW_ORDER' intent and the system will automatically notify them.`;
             }
 
+            let historyContents: any[] = [];
+            
+            // Always load the last 15 messages so the AI has full context of the conversation
+            try {
+                const { data: logs } = await supabaseAdmin.from('chat_logs')
+                    .select('role, content')
+                    .eq('phone_number', senderPhone)
+                    .order('created_at', { ascending: false })
+                    .limit(15);
+                    
+                if (logs && logs.length > 0) {
+                    historyContents = logs.reverse().map((l: any) => ({
+                        role: l.role === 'model' ? 'model' : 'user',
+                        parts: [{ text: l.content }]
+                    }));
+                }
+            } catch (e) {
+                logger.error(e, 'Failed to fetch chat logs');
+            }
+
+            // Fallback in case logs failed
             if (historyContents.length === 0) {
                 historyContents = [{ role: 'user', parts: [{ text: messageText }] }];
             }
