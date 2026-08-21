@@ -13,6 +13,10 @@ import { WhatsAppManager } from './services/whatsapp/manager.js';
 
 const app = express();
 
+// Trust the first proxy (Railway load balancer) to ensure correct IP resolution for rate limiting
+app.set('trust proxy', 1);
+
+// Middleware
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
