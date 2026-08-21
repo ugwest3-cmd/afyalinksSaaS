@@ -187,14 +187,18 @@ export default function WhatsAppPage() {
                       {session.sessionId}
                     </TableCell>
                     <TableCell>
+                    <div className="flex flex-col">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${
-                          session.status === 'CONNECTED' ? 'bg-[#16834B]' : 
-                          session.status === 'QR_READY' ? 'bg-[#D98A00]' : 'bg-[#D64545]'
-                        }`} />
-                        <span className="text-sm font-medium">{session.status}</span>
+                        <div className={`w-2 h-2 rounded-full ${session.status === 'CONNECTED' ? 'bg-green-500' : session.status === 'QR_READY' ? 'bg-blue-500' : 'bg-red-500'}`} />
+                        <span className="font-medium text-gray-700">{session.status}</span>
                       </div>
-                    </TableCell>
+                      {session.status === 'FAILED' && session.lastError && (
+                        <span className="text-xs text-red-500 mt-1 max-w-[200px] truncate" title={session.lastError}>
+                          {session.lastError}
+                        </span>
+                      )}
+                    </div>
+                  </TableCell>
                     <TableCell className="text-right space-x-2">
                       {session.status === 'QR_READY' && (
                         <Button variant="outline" size="sm" onClick={() => handleShowQr(session.sessionId)} className="h-8">
