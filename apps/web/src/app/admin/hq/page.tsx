@@ -51,7 +51,11 @@ export default function HQPage() {
       interval = setInterval(async () => {
         try {
           const statusRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/status`);
-          setQrStatus(statusRes?.status || 'INITIALIZING');
+          if (statusRes?.lastError) {
+             setQrStatus(`Error: ${statusRes.lastError}`);
+          } else {
+             setQrStatus(statusRes?.status || 'INITIALIZING');
+          }
           
           if (statusRes?.status === 'CONNECTED') {
             setIsQrModalOpen(false);

@@ -71,8 +71,8 @@ router.get('/sessions', async (req: Request, res: Response) => {
 router.get('/:sessionId/status', (req: Request, res: Response) => {
     try {
         const { sessionId } = req.params;
-        const status = whatsappManager.getSessionStatus(sessionId);
-        res.status(200).json({ sessionId, status });
+        const { status, lastError } = whatsappManager.getSessionStatus(sessionId);
+        res.status(200).json({ sessionId, status, lastError });
     } catch (error: any) {
         res.status(404).json({ error: error.message });
     }
@@ -81,7 +81,7 @@ router.get('/:sessionId/status', (req: Request, res: Response) => {
 router.get('/:sessionId/qr', (req: Request, res: Response) => {
     try {
         const { sessionId } = req.params;
-        const status = whatsappManager.getSessionStatus(sessionId);
+        const { status, lastError } = whatsappManager.getSessionStatus(sessionId);
         
         if (status === 'CONNECTED') {
             return res.status(200).json({ sessionId, status: 'CONNECTED', message: 'Session is already connected' });
@@ -89,7 +89,7 @@ router.get('/:sessionId/qr', (req: Request, res: Response) => {
 
         const qrCode = whatsappManager.getQR(sessionId);
         if (!qrCode) {
-            return res.status(404).json({ error: 'QR Code not available yet. Try again in a few seconds.' });
+            return res.status(404).json({ error: lastError || 'QR Code not available yet. Try again in a few seconds.' });
         }
 
         res.status(200).json({ sessionId, qrCode });

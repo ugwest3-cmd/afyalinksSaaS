@@ -104,12 +104,12 @@ export class WhatsAppManager {
         await session.reconnect();
     }
 
-    public getSessionStatus(sessionId: string): SessionStatus {
+    public getSessionStatus(sessionId: string): { status: SessionStatus, lastError: string | null } {
         const session = this.getSession(sessionId);
         if (!session) {
             throw new Error(`Session ${sessionId} not found`);
         }
-        return session.getStatus();
+        return { status: session.getStatus(), lastError: session.lastError };
     }
 
     public getQR(sessionId: string): string | null {

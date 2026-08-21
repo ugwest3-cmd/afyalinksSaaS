@@ -69,7 +69,8 @@ export class WhatsAppSession {
                         this.qrCode = await qrcode.toDataURL(qr);
                         this.status = 'QR_READY';
                         logger.info(`QR code generated for session ${this.sessionId}`);
-                    } catch (err) {
+                    } catch (err: any) {
+                        this.lastError = err.message;
                         logger.error(err, `Failed to generate QR code data URL for session ${this.sessionId}`);
                     }
                 }
@@ -106,7 +107,8 @@ export class WhatsAppSession {
                 }
             });
 
-        } catch (error) {
+        } catch (error: any) {
+            this.lastError = error.message;
             logger.error(error, `Error connecting session ${this.sessionId}:`);
             this.status = 'FAILED';
         }
