@@ -32,11 +32,16 @@ export class WhatsAppSession {
             logger.info(`Starting connection for session ${this.sessionId}`);
             this.status = 'INITIALIZING';
             
-            // Force puppeteer to use local cache if env var isn't loaded yet
-            if (!process.env.PUPPETEER_CACHE_DIR) {
-                process.env.PUPPETEER_CACHE_DIR = '/app/puppeteer_browser';
+            // Find the system Chromium installed by Nixpacks
+            let sysChromePath = '/usr/bin/chromium';
+            try {
+                const { execSync } = await import('child_process');
+                sysChromePath = execSync('which chromium || which chromium-browser || echo "/usr/bin/chromium"', { encoding: 'utf-8' }).trim();
+                logger.info(`System Chromium found at: ${sysChromePath}`);
+            } catch (e) {
+                logger.warn('Failed to detect Chromium path, using default');
             }
-            
+
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
@@ -53,7 +58,7 @@ export class WhatsAppSession {
                         '--no-zygote',
                         '--disable-gpu'
                     ],
-                    executablePath: process.env.CHROME_BIN || undefined
+                    executablePath: sysChromePath
                 }
             });
 
