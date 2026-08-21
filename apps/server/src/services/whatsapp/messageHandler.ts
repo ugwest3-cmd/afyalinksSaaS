@@ -1,4 +1,4 @@
-import { WAMessage } from '@whiskeysockets/baileys';
+import { Message } from 'whatsapp-web.js';
 import { logger } from '../../config/logger.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -19,20 +19,17 @@ async function saveChatLog(phoneNumber: string, sessionId: string, role: string,
     if (error) logger.error(error, 'Failed to save chat log');
 }
 
-export const handleIncomingMessage = async (sessionId: string, message: WAMessage) => {
+export const handleIncomingMessage = async (sessionId: string, message: Message) => {
     try {
-        const jid = message.key.remoteJid;
+        const jid = message.from;
         if (!jid || jid === 'status@broadcast') return;
 
         const senderPhone = jid.split('@')[0];
-        const isFromMe = message.key.fromMe === true;
+        const isFromMe = message.fromMe === true;
 
         if (isFromMe) return; // Ignore messages we sent ourselves
 
-        const messageText = message.message?.conversation || 
-                            message.message?.extendedTextMessage?.text || 
-                            message.message?.imageMessage?.caption || 
-                            '';
+        const messageText = message.body || '';
 
         if (!messageText) return;
 

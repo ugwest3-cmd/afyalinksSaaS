@@ -1,0 +1,20 @@
+[phases.setup]
+nixPkgs = [
+  "...",
+  "chromium",
+  "nss",
+  "freetype",
+  "harfbuzz",
+  "pango",
+  "xorg.libX11",
+  "xorg.libXext",
+  "xorg.libXfixes",
+  "xorg.libXi",
+  "xorg.libXrandr",
+  "xorg.libxcb",
+  "alsa-lib",
+  "mesa"
+]
+
+[phases.build]
+cmds = ["pnpm install --no-frozen-lockfile", "pnpm build"]

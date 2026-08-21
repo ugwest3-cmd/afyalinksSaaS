@@ -1,18 +1,9 @@
-import NodeCache from 'node-cache';
-import { 
-    makeWASocket,
-    DisconnectReason, 
-    useMultiFileAuthState, 
-    WAMessage, 
-    WASocket,
-    Browsers
-} from '@whiskeysockets/baileys';
-import { Boom } from '@hapi/boom';
+import { Client, LocalAuth } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import { logger } from '../../config/logger.js';
-import { createAuthState } from './store.js';
 import { handleIncomingMessage } from './messageHandler.js';
 import { supabaseAdmin } from '../../config/supabase.js';
+import { Boom } from '@hapi/boom';
 
 export type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED';
 
@@ -24,10 +15,9 @@ export class WhatsAppSession {
     public qrCode: string | null = null;
     public lastError: string | null = null;
     
-    private socket: WASocket | null = null;
+    private client: Client | null = null;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
-    private msgRetryCounterCache = new NodeCache(); // REQUIRED for newer Baileys
 
     constructor(sessionId: string, pharmacyId: string, phoneNumber: string) {
         this.sessionId = sessionId;
@@ -40,86 +30,89 @@ export class WhatsAppSession {
             logger.info(`Starting connection for session ${this.sessionId}`);
             this.status = 'INITIALIZING';
             
-            const { state, saveCreds } = await createAuthState(this.sessionId);
-
-            this.socket = makeWASocket({
-                auth: state,
-                printQRInTerminal: false,
-                browser: Browsers.macOS('Desktop'),
-                msgRetryCounterCache: this.msgRetryCounterCache,
-                connectTimeoutMs: 60000,
-                keepAliveIntervalMs: 10000,
-                markOnlineOnConnect: false
+            this.client = new Client({
+                authStrategy: new LocalAuth({
+                    clientId: this.sessionId,
+                    dataPath: './whatsapp_sessions'
+                }),
+                puppeteer: {
+                    headless: true,
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-accelerated-2d-canvas',
+                        '--no-first-run',
+                        '--no-zygote',
+                        '--disable-gpu'
+                    ],
+                    executablePath: process.env.CHROME_BIN || undefined
+                }
             });
 
-            // Fallback timeout in case Baileys hangs silently
             const initTimeout = setTimeout(() => {
                 if (this.status === 'INITIALIZING') {
-                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 15s. Forcing ws close.`);
+                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 30s. Forcing fail.`);
                     this.status = 'FAILED';
-                    this.lastError = 'WebSocket connection timed out (Network or IPv6 issue)';
-                    
-                    // Force destroy the underlying websocket to unblock memory
-                    if (this.socket && (this.socket as any).ws) {
-                        try {
-                            (this.socket as any).ws.close();
-                        } catch(e) {}
-                    }
+                    this.lastError = 'Browser engine failed to start';
                     this.disconnect();
                 }
-            }, 15000);
+            }, 30000);
 
-            this.socket?.ev.on('creds.update', saveCreds);
-            
-            this.socket?.ev.on('connection.update', async (update) => {
-                const { connection, lastDisconnect, qr } = update;
-
-                if (connection || qr) {
-                    clearTimeout(initTimeout);
+            this.client.on('qr', async (qr) => {
+                clearTimeout(initTimeout);
+                try {
+                    this.qrCode = await qrcode.toDataURL(qr);
+                    this.status = 'QR_READY';
+                    logger.info(`QR code generated for session ${this.sessionId}`);
+                } catch (err: any) {
+                    this.lastError = err.message;
+                    logger.error(err, `Failed to generate QR code data URL for session ${this.sessionId}`);
                 }
+            });
 
-                if (qr) {
-                    try {
-                        this.qrCode = await qrcode.toDataURL(qr);
-                        this.status = 'QR_READY';
-                        logger.info(`QR code generated for session ${this.sessionId}`);
-                    } catch (err: any) {
-                        this.lastError = err.message;
-                        logger.error(err, `Failed to generate QR code data URL for session ${this.sessionId}`);
-                    }
-                }
+            this.client.on('ready', async () => {
+                clearTimeout(initTimeout);
+                this.status = 'CONNECTED';
+                this.qrCode = null;
+                this.reconnectAttempts = 0;
+                logger.info(`Session ${this.sessionId} successfully connected`);
+                await supabaseAdmin.from('whatsapp_accounts').update({ status: 'CONNECTED', last_connected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
+            });
 
-                if (connection === 'close') {
-                    const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
-                    logger.warn(`Connection closed for session ${this.sessionId}. Reconnecting: ${shouldReconnect}`);
-                    
-                    if (shouldReconnect) {
-                        this.handleReconnect();
-                    } else {
-                        this.status = 'DISCONNECTED';
-                        this.qrCode = null;
-                        await supabaseAdmin.from('whatsapp_accounts').update({ status: 'DISCONNECTED', last_disconnected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
-                    }
-                } else if (connection === 'open') {
-                    this.status = 'CONNECTED';
+            this.client.on('authenticated', () => {
+                clearTimeout(initTimeout);
+                logger.info(`Session ${this.sessionId} authenticated`);
+            });
+
+            this.client.on('auth_failure', (msg) => {
+                clearTimeout(initTimeout);
+                logger.error(`Session ${this.sessionId} authentication failed: ${msg}`);
+                this.status = 'FAILED';
+                this.lastError = msg;
+            });
+
+            this.client.on('disconnected', async (reason) => {
+                logger.warn(`Session ${this.sessionId} disconnected: ${reason}`);
+                
+                if (reason === 'NAVIGATION' || reason === 'CONFLICT') {
+                    this.handleReconnect();
+                } else {
+                    this.status = 'DISCONNECTED';
                     this.qrCode = null;
-                    this.reconnectAttempts = 0;
-                    logger.info(`Session ${this.sessionId} successfully connected`);
-                    await supabaseAdmin.from('whatsapp_accounts').update({ status: 'CONNECTED', last_connected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
+                    await supabaseAdmin.from('whatsapp_accounts').update({ status: 'DISCONNECTED', last_disconnected_at: new Date().toISOString() }).eq('session_id', this.sessionId);
                 }
             });
 
-            this.socket?.ev.on('messages.upsert', async (m) => {
-                if (m.type === 'notify') {
-                    for (const msg of m.messages) {
-                        try {
-                            await handleIncomingMessage(this.sessionId, msg);
-                        } catch (error) {
-                            logger.error(error, `Error handling message for session ${this.sessionId}`);
-                        }
-                    }
+            this.client.on('message', async (msg) => {
+                try {
+                    await handleIncomingMessage(this.sessionId, msg as any);
+                } catch (error) {
+                    logger.error(error, `Error handling message for session ${this.sessionId}`);
                 }
             });
+
+            await this.client.initialize();
 
         } catch (error: any) {
             this.lastError = error.message;
@@ -137,16 +130,18 @@ export class WhatsAppSession {
         } else {
             logger.error(`Max reconnect attempts reached for session ${this.sessionId}`);
             this.status = 'FAILED';
+            this.lastError = 'Max reconnect attempts reached';
         }
     }
 
     public async disconnect(): Promise<void> {
-        if (this.socket) {
-            this.socket?.end(new Error('Manual disconnect'));
-            this.socket = null;
+        if (this.client) {
+            try {
+                await this.client.destroy();
+            } catch (e) {}
+            this.client = null;
             this.status = 'DISCONNECTED';
-            this.qrCode = null;
-            logger.info(`Session ${this.sessionId} manually disconnected`);
+            logger.info(`Session ${this.sessionId} disconnected`);
         }
     }
 
@@ -156,26 +151,22 @@ export class WhatsAppSession {
         await this.connect();
     }
 
-    public async sendMessage(jid: string, text: string): Promise<void> {
-        if (!this.socket || this.status !== 'CONNECTED') {
-            throw new Error(`Cannot send message. Session ${this.sessionId} is not connected.`);
+    public async sendMessage(to: string, text: string): Promise<void> {
+        if (!this.client || this.status !== 'CONNECTED') {
+            throw Boom.failedDependency(`Session ${this.sessionId} is not connected`);
         }
-        await this.socket?.sendMessage(jid, { text });
-    }
-
-    public async sendMedia(jid: string, mediaUrl: string, caption?: string): Promise<void> {
-        if (!this.socket || this.status !== 'CONNECTED') {
-            throw new Error(`Cannot send media. Session ${this.sessionId} is not connected.`);
+        
+        try {
+            // whatsapp-web.js requires numbers formatted as 1234567890@c.us
+            let cleanNumber = to.replace('@s.whatsapp.net', '').replace('@c.us', '').replace(/\+/g, '');
+            const formattedNumber = `${cleanNumber}@c.us`;
+            await this.client.sendMessage(formattedNumber, text);
+            logger.info(`Message sent successfully to ${to} via session ${this.sessionId}`);
+        } catch (error) {
+            logger.error(error, `Failed to send message to ${to} via session ${this.sessionId}`);
+            throw Boom.internal('Failed to send WhatsApp message');
         }
-        // In a real implementation, you might need to fetch the URL to a buffer if it's external,
-        // but Baileys handles URLs natively in some cases if mapped correctly.
-        // For MVP, assuming image url sending.
-        await this.socket?.sendMessage(jid, { 
-            image: { url: mediaUrl }, 
-            caption 
-        });
     }
-
     public getStatus(): SessionStatus {
         return this.status;
     }
