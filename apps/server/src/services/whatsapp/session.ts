@@ -33,6 +33,27 @@ export class WhatsAppSession {
             this.status = 'INITIALIZING';
             this.lastError = null;
             
+            // Find system Chromium - Railway installs it via nixpacks
+            const chromePath = process.env.CHROME_BIN 
+                || process.env.PUPPETEER_EXECUTABLE_PATH
+                || '/nix/store/chromium/bin/chromium'  // nixpacks default
+                || '/usr/bin/chromium-browser'
+                || '/usr/bin/chromium'
+                || '/usr/bin/google-chrome';
+
+            // Detect the actual chromium path dynamically
+            let resolvedChromePath = chromePath;
+            try {
+                const { execSync } = await import('child_process');
+                const detected = execSync('which chromium || which chromium-browser || which google-chrome || echo ""', { encoding: 'utf-8' }).trim();
+                if (detected) {
+                    resolvedChromePath = detected;
+                    logger.info(`Detected Chromium at: ${resolvedChromePath}`);
+                }
+            } catch (e) {
+                logger.warn('Could not auto-detect Chromium path, using default');
+            }
+
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
@@ -50,7 +71,7 @@ export class WhatsAppSession {
                         '--disable-gpu',
                         '--single-process'
                     ],
-                    executablePath: process.env.CHROME_BIN || undefined
+                    executablePath: resolvedChromePath
                 }
             });
 
