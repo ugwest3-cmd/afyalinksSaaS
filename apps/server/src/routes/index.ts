@@ -7,6 +7,7 @@ import dashboardRoutes from './dashboard.routes.js';
 import auditRoutes from './audit.routes.js';
 import aiRoutes from './ai.routes.js';
 import campaignRoutes from './campaign.routes.js';
+import clinicsRoutes from './clinics.routes.js';
 
 const router: Router = Router();
 
@@ -22,6 +23,7 @@ router.use('/admin/dashboard', dashboardRoutes);
 router.use('/admin/audit', auditRoutes);
 router.use('/admin/ai', aiRoutes);
 router.use('/admin/campaigns', campaignRoutes);
+router.use('/admin/clinics', clinicsRoutes);
 
 // Order and payment routes include their own path prefixes
 // (admin, public, and internal routes are all in one router)

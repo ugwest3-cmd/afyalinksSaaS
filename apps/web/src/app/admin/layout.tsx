@@ -16,13 +16,15 @@ import {
   Settings,
   LogOut,
   Menu,
-  X
+  X,
+  Stethoscope
 } from 'lucide-react';
 import { clsx } from 'clsx';
 
 const navItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Pharmacies', href: '/admin/pharmacies', icon: Store },
+  { name: 'Clinics', href: '/admin/clinics', icon: Stethoscope },
   { name: 'Orders', href: '/admin/orders', icon: ShoppingCart },
   { name: 'Payments', href: '/admin/payments', icon: CreditCard },
   { name: 'WhatsApp', href: '/admin/whatsapp', icon: MessageCircle },

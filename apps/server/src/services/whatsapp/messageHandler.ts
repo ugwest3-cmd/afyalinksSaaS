@@ -165,10 +165,18 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
                 }
             });
 
-            const resultText = response.text;
-            if (!resultText) return;
-            
-            const analysis = JSON.parse(resultText);
+            const rawResponse = response.text;
+            let analysis: any;
+            try {
+                // Strip markdown formatting if Gemini included it
+                const jsonStr = rawResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+                analysis = JSON.parse(jsonStr);
+            } catch (e) {
+                logger.error(`Failed to parse Gemini response as JSON: ${rawResponse}`);
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, "Sorry, I didn't understand that. Could you rephrase your request?");
+                return;
+            }
+
             logger.info(`[Gemini Analysis] ${JSON.stringify(analysis)}`);
 
             if (analysis.intent === 'CONVERSATIONAL_REPLY' && analysis.replyText) {
