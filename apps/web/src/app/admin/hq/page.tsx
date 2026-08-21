@@ -66,8 +66,13 @@ export default function HQPage() {
               setQrCode(qrRes.qrCode);
             }
           }
-        } catch (error) {
-          // Keep waiting
+        } catch (error: any) {
+          console.error("Polling error:", error);
+          if (error.message) {
+             setQrStatus(`Error: ${error.message}`);
+          } else {
+             setQrStatus('FAILED TO FETCH STATUS');
+          }
         }
       }, 3000);
     }
