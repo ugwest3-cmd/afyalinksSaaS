@@ -33,6 +33,22 @@ export class WhatsAppSession {
             this.status = 'INITIALIZING';
             this.lastError = null;
             
+            let resolvedChromePath: string | undefined = undefined;
+            if (process.env.CHROME_BIN) {
+                resolvedChromePath = process.env.CHROME_BIN;
+            } else if (process.platform === 'win32') {
+                resolvedChromePath = undefined; // Let puppeteer use bundled on Windows
+            } else {
+                try {
+                    const { execSync } = await import('child_process');
+                    const detected = execSync('which chromium || which chromium-browser || which google-chrome || echo ""', { encoding: 'utf-8' }).trim();
+                    if (detected) {
+                        resolvedChromePath = detected.split('\n')[0]; // take first match
+                        logger.info(`Detected Chromium at: ${resolvedChromePath}`);
+                    }
+                } catch (e) {}
+            }
+
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
@@ -50,7 +66,7 @@ export class WhatsAppSession {
                         '--disable-gpu',
                         '--single-process'
                     ],
-                    executablePath: process.env.CHROME_BIN || undefined
+                    executablePath: resolvedChromePath
                 }
             });
 
