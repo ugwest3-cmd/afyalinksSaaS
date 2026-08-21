@@ -71,7 +71,11 @@ export const getPharmacyById = async (id: string) => {
     throw new Error(error.message);
   }
 
-  return data;
+  return {
+    ...data,
+    whatsappConnected: data.whatsapp_accounts?.some((wa: any) => wa.status === 'CONNECTED'),
+    pesapalConnected: data.payment_accounts?.some((pa: any) => pa.status === 'ACTIVE')
+  };
 };
 
 export const updatePharmacy = async (id: string, data: any, adminId: string) => {
