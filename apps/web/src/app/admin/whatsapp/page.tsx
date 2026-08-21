@@ -280,9 +280,20 @@ export default function WhatsAppPage() {
             </div>
           ) : (
             <div className="space-y-4 text-center text-muted flex flex-col items-center">
-              <Loader2 className="w-10 h-10 animate-spin text-primary" />
-              <p>Generating secure QR code...</p>
-              <p className="text-xs">Status: {qrStatus}</p>
+              {qrStatus === 'FAILED' ? (
+                <div className="text-red-500 space-y-2">
+                  <p className="font-bold">Connection Failed</p>
+                  <p className="text-sm bg-red-50 p-2 rounded border border-red-100 break-all max-w-sm">
+                    {sessions.find(s => s.sessionId === activeSessionId)?.lastError || 'Unknown error occurred'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                  <p>Generating secure QR code...</p>
+                  <p className="text-xs">Status: {qrStatus}</p>
+                </>
+              )}
             </div>
           )}
         </div>
