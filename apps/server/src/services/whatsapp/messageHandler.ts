@@ -361,6 +361,11 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
                 } else {
                     logger.error(`Could not forward order ${order.order_number}. System session: ${!!systemAccount}, Staff phone: ${!!pharmacyInfo?.staff_phone_number}`);
                 }
+            } else {
+                // Fallback for unknown intents
+                const fallbackReply = analysis.replyText || "I'm not sure how to help with that. Please place an order or ask about your order status.";
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, fallbackReply);
+                await saveChatLog(senderPhone, sessionId, 'model', fallbackReply);
             }
         }
 
@@ -372,10 +377,11 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
             try {
                 const senderPhone = jid.split('@')[0];
                 const errMsg = "I'm sorry, my AI systems are temporarily unavailable. Please try again in a few minutes or contact support directly.";
-                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errMsg);
                 
-                // Save to chat_logs for debugging
+                // Save to chat_logs for debugging first so we don't lose it if sendMessage fails
                 await saveChatLog(senderPhone, sessionId, 'model', `[SYSTEM ERROR CRASH]: ${error.message}`);
+                
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errMsg);
             } catch (e) {
                 // Ignore send errors in error handler
             }
