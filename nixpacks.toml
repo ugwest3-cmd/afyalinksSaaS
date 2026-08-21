@@ -16,9 +16,5 @@ nixPkgs = [
   "mesa"
 ]
 
-[variables]
-PUPPETEER_SKIP_DOWNLOAD = "true"
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-
 [phases.build]
 cmds = ["pnpm install --no-frozen-lockfile", "pnpm build"]
