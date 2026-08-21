@@ -367,11 +367,15 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
     } catch (error: any) {
         logger.error(error, `Error in handleIncomingMessage for session ${sessionId}:`);
         
-        // Let the user know the AI is down if this was a user message
         const jid = message.from;
         if (jid && !message.fromMe) {
             try {
-                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, "I'm sorry, my AI systems are temporarily unavailable. Please try again in a few minutes or contact support directly.");
+                const senderPhone = jid.split('@')[0];
+                const errMsg = "I'm sorry, my AI systems are temporarily unavailable. Please try again in a few minutes or contact support directly.";
+                await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errMsg);
+                
+                // Save to chat_logs for debugging
+                await saveChatLog(senderPhone, sessionId, 'model', `[SYSTEM ERROR CRASH]: ${error.message}`);
             } catch (e) {
                 // Ignore send errors in error handler
             }
