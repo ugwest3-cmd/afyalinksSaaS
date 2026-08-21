@@ -47,12 +47,9 @@ export class WhatsAppSession {
                 printQRInTerminal: false,
                 browser: Browsers.macOS('Desktop'),
                 msgRetryCounterCache: this.msgRetryCounterCache,
-                generateHighQualityLinkPreview: false, // Prevents hanging on link generation
-                syncFullHistory: false, // Prevents downloading huge histories on init
                 connectTimeoutMs: 60000,
                 keepAliveIntervalMs: 10000,
-                emitOwnEvents: true,
-                markOnlineOnConnect: true
+                markOnlineOnConnect: false
             });
 
             // Fallback timeout in case Baileys hangs silently
