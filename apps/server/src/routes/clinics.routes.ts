@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { logger } from '../config/logger.js';
 
-const router = Router();
+const router: Router = Router();
 
 // Get all clinics
 router.get('/', async (req: Request, res: Response) => {

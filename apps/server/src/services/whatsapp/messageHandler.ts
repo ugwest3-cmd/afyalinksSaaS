@@ -166,6 +166,9 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
             });
 
             const rawResponse = response.text;
+            if (!rawResponse) {
+                throw new Error('Gemini returned an empty response');
+            }
             let analysis: any;
             try {
                 // Strip markdown formatting if Gemini included it

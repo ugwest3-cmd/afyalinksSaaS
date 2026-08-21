@@ -162,7 +162,7 @@ export default function ClinicsPage() {
                         </Button>
                         <Button 
                           size="sm" 
-                          variant="destructive"
+                          variant="danger"
                           onClick={() => handleDelete(clinic.id)}
                         >
                           <Trash2 className="w-4 h-4 mr-1" /> Delete
