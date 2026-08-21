@@ -20,6 +20,7 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
     name: '',
     legalName: '',
     phone: '',
+    staffPhoneNumber: '',
     email: '',
     address: '',
     city: '',
@@ -38,6 +39,7 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
           name: data.name || '',
           legalName: data.legal_name || '',
           phone: data.phone || '',
+          staffPhoneNumber: data.staff_phone_number || '',
           email: data.email || '',
           address: data.address || '',
           city: data.city || '',
@@ -77,6 +79,7 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
         name: formData.name,
         legal_name: formData.legalName || null,
         phone: formData.phone,
+        staff_phone_number: formData.staffPhoneNumber || null,
         email: formData.email || null,
         address: formData.address || null,
         city: formData.city || null,
@@ -157,11 +160,20 @@ export default function EditPharmacyPage({ params }: { params: { id: string } })
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-[#17211E]">Phone Number *</Label>
+              <Label htmlFor="phone" className="text-[#17211E]">Public Phone Number *</Label>
               <Input 
                 id="phone" name="phone" 
                 value={formData.phone} onChange={handleChange} 
                 required placeholder="+256..."
+                className="border-[#DCE7E3] focus-visible:ring-[#0B8F6A]"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="staffPhoneNumber" className="text-[#17211E]">Staff/Owner WhatsApp Number</Label>
+              <Input 
+                id="staffPhoneNumber" name="staffPhoneNumber" 
+                value={formData.staffPhoneNumber} onChange={handleChange} 
+                placeholder="+256... (For receiving orders)"
                 className="border-[#DCE7E3] focus-visible:ring-[#0B8F6A]"
               />
             </div>

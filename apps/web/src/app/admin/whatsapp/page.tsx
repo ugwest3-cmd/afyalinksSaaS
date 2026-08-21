@@ -127,6 +127,16 @@ export default function WhatsAppPage() {
     }
   };
 
+  const handleSetSystem = async (sessionId: string) => {
+    if (!confirm('Set this number as the Central Platform Number for routing orders?')) return;
+    try {
+      await api.post(`/api/admin/whatsapp/${sessionId}/set-system`, {});
+      fetchData();
+    } catch (error: any) {
+      alert(error.message || 'Failed to set system number');
+    }
+  };
+
   const handleShowQr = (sessionId: string) => {
     setActiveSessionId(sessionId);
     setQrStatus('INITIALIZING');
@@ -178,6 +188,11 @@ export default function WhatsAppPage() {
                   <TableRow key={session.sessionId}>
                     <TableCell className="font-medium text-[#17211E]">
                       {pharmacy?.name || session.pharmacyId}
+                      {session.is_system && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#E8F7F2] text-[#0B8F6A]">
+                          System Route
+                        </span>
+                      )}
                     </TableCell>
                     <TableCell className="font-mono text-sm">
                       {pharmacy?.whatsapp_number || 'Unknown'}
@@ -195,6 +210,11 @@ export default function WhatsAppPage() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right space-x-2">
+                      {!session.is_system && session.status === 'CONNECTED' && (
+                        <Button variant="outline" size="sm" onClick={() => handleSetSystem(session.sessionId)} className="h-8">
+                          Set System
+                        </Button>
+                      )}
                       {session.status === 'QR_READY' && (
                         <Button variant="outline" size="sm" onClick={() => handleShowQr(session.sessionId)} className="h-8">
                           <QrCode className="w-3 h-3 mr-1" /> View QR

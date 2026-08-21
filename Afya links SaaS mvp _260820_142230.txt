@@ -4,20 +4,19 @@ Build a centralized SaaS platform owned and controlled by Afya Links that connec
 Clinics → Wholesale Pharmacies → Payment
 The system does not maintain a medicine catalogue, inventory, or pharmacy pricing database.
 Instead:
-1. Each wholesale pharmacy provides a WhatsApp number.
-2. Afya Links connects that number through Baileys.
-3. That number becomes the pharmacy's dedicated ordering channel.
-4. Clinics send orders directly to that pharmacy's WhatsApp number.
-5. Afya Links receives and records the order.
-6. Afya Links routes the order to the correct pharmacy.
-7. The pharmacy reviews the order and determines availability/pricing.
-8. The pharmacy submits the final total.
-9. Afya Links creates a payment request using that pharmacy's PesaPal credentials.
-10. Afya Links generates a branded payment page.
-11. Clinic pays.
-12. Money is processed through the pharmacy's own PesaPal merchant account.
-13. Afya Links receives the payment status and updates the order.
-14. Afya Links Super Admin can monitor the entire transaction.
+1. Each wholesale pharmacy provides a dedicated WhatsApp number (to act as the Clinic-Facing Bot) AND their personal/staff WhatsApp number (for receiving notifications).
+2. Afya Links connects the Clinic-Facing Bot number through Baileys. Afya Links also maintains ONE Central Platform WhatsApp number.
+3. The Clinic-Facing number becomes the pharmacy's dedicated ordering channel for clinics.
+4. Clinics send orders directly to that Clinic-Facing WhatsApp number.
+5. Afya Links (via Gemini AI) receives and records the order.
+6. The Afya Links Central Platform Number automatically forwards the order details (with an Order ID) to the pharmacy's personal/staff WhatsApp number.
+7. The pharmacy staff reviews the order and replies to the Central Platform Number with the Order ID and the final total amount (e.g., "ORD-123 50000").
+8. The system detects this reply, updates the order, and creates a payment request using that pharmacy's PesaPal credentials.
+9. The Clinic-Facing Bot number sends the branded PesaPal payment link back to the clinic.
+10. Clinic pays.
+11. Money is processed through the pharmacy's own PesaPal merchant account.
+12. Afya Links receives the payment status and updates the order, notifying both parties.
+13. Afya Links Super Admin can monitor the entire transaction.
 
 ───
 

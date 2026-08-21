@@ -43,9 +43,16 @@ router.post('/connect', async (req: Request, res: Response) => {
     }
 });
 
-router.get('/sessions', (req: Request, res: Response) => {
+router.get('/sessions', async (req: Request, res: Response) => {
     try {
-        const sessions = whatsappManager.getAllSessions();
+        const memorySessions = whatsappManager.getAllSessions();
+        const { data: dbSessions } = await supabaseAdmin.from('whatsapp_accounts').select('session_id, is_system');
+        
+        const sessions = memorySessions.map(s => {
+            const dbSession = dbSessions?.find(db => db.session_id === s.sessionId);
+            return { ...s, is_system: dbSession?.is_system || false };
+        });
+
         res.status(200).json({ sessions });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
@@ -113,6 +120,24 @@ router.post('/:sessionId/test-message', async (req: Request, res: Response) => {
 
         await whatsappManager.sendMessage(sessionId, to, message);
         res.status(200).json({ message: 'Test message sent successfully' });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/:sessionId/set-system', async (req: Request, res: Response) => {
+    try {
+        const { sessionId } = req.params;
+        
+        // Reset all to false
+        await supabaseAdmin.from('whatsapp_accounts').update({ is_system: false }).neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Set this one to true
+        const { error } = await supabaseAdmin.from('whatsapp_accounts').update({ is_system: true }).eq('session_id', sessionId);
+        
+        if (error) throw error;
+        
+        res.status(200).json({ message: 'System number updated' });
     } catch (error: any) {
         res.status(500).json({ error: error.message });
     }
