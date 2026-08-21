@@ -34,14 +34,17 @@ export class WhatsAppManager {
                 
                 // Check if the auth directory exists before trying to reconnect
                 const fs = await import('fs');
+                const path = await import('path');
+                const { getSessionStoragePath } = await import('./config.js');
                 
                 for (const acc of accounts) {
-                    const authPath = `./whatsapp_sessions/session-${acc.session_id}`;
+                    const storagePath = getSessionStoragePath();
+                    const authPath = path.resolve(storagePath, `session-${acc.session_id}`);
                     if (fs.existsSync(authPath)) {
                         logger.info(`Auth folder found for ${acc.session_id}, restoring...`);
                         await this.createSession(acc.session_id, acc.pharmacy_id, acc.phone_number, true);
                     } else {
-                        logger.warn(`No auth folder for ${acc.session_id}. Marking as DISCONNECTED. Admin must re-scan QR.`);
+                        logger.warn(`No auth folder for ${acc.session_id} at ${authPath}. Marking as DISCONNECTED.`);
                         await supabaseAdmin.from('whatsapp_accounts')
                             .update({ status: 'DISCONNECTED' })
                             .eq('session_id', acc.session_id);

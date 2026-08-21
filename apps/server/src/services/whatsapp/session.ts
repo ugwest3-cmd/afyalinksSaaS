@@ -35,8 +35,9 @@ export class WhatsAppSession {
                 const fs = await import('fs');
                 const path = await import('path');
                 const { install, resolveBuildId, Browser, detectBrowserPlatform } = await import('@puppeteer/browsers');
+                const { getSessionStoragePath } = await import('./config.js');
                 
-                const cacheDir = path.resolve('./whatsapp_sessions/chrome');
+                const cacheDir = path.resolve(getSessionStoragePath(), 'chrome');
                 if (!fs.existsSync(cacheDir)) {
                     fs.mkdirSync(cacheDir, { recursive: true });
                 }
@@ -65,10 +66,12 @@ export class WhatsAppSession {
                 throw new Error(`Failed to download Chrome: ${error.message}`);
             }
 
+            const { getSessionStoragePath } = await import('./config.js');
+            const path = await import('path');
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
-                    dataPath: './whatsapp_sessions'
+                    dataPath: path.resolve(getSessionStoragePath())
                 }),
                 puppeteer: {
                     headless: true,

@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { logger } from '../../config/logger.js';
 
-const SESSIONS_DIR = path.resolve(process.cwd(), 'whatsapp_sessions');
+import { getSessionStoragePath } from './config.js';
+
+const SESSIONS_DIR = path.resolve(getSessionStoragePath());
 
 export const deleteAuthState = async (sessionId: string) => {
   // whatsapp-web.js LocalAuth stores sessions in session-<clientId>
