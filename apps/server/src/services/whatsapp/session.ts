@@ -189,22 +189,17 @@ export class WhatsAppSession {
         await this.connect();
     }
 
-    public async sendMessage(to: string, text: string): Promise<void> {
-        if (!this.client || this.status !== 'CONNECTED') {
-            throw failedDependency(`Session ${this.sessionId} is not connected`);
-        }
-        
+    public async sendMessage(to: string, text: string) {
+        if (!this.client) throw new Error('Client not initialized');
         try {
-            // whatsapp-web.js requires numbers formatted as 1234567890@c.us
-            let cleanNumber = to.replace('@s.whatsapp.net', '').replace('@c.us', '').replace(/\+/g, '');
-            const formattedNumber = `${cleanNumber}@c.us`;
-            await this.client.sendMessage(formattedNumber, text);
-            logger.info(`Message sent successfully to ${to} via session ${this.sessionId}`);
+            // whatsapp-web.js accepts the raw JID (to) which includes @s.whatsapp.net or @g.us
+            await this.client.sendMessage(to, text);
         } catch (error) {
-            logger.error(error, `Failed to send message to ${to} via session ${this.sessionId}`);
-            throw internal('Failed to send WhatsApp message');
+            logger.error(error, `Failed to send message to ${to}`);
+            throw error;
         }
     }
+
     public getStatus(): SessionStatus {
         return this.status;
     }
