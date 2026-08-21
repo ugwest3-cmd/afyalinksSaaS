@@ -46,8 +46,21 @@ export default function NewPharmacyPage() {
     }
 
     try {
-      const response = await api.post('/api/admin/pharmacies', formData);
-      router.push(`/admin/pharmacies/${response.data.id}`);
+      const payload = {
+        name: formData.name,
+        legal_name: formData.legalName || null,
+        phone: formData.phone,
+        email: formData.email || null,
+        address: formData.address || null,
+        city: formData.city || null,
+        country: formData.country || 'Uganda',
+        whatsapp_number: formData.whatsappNumber || null,
+        status: 'ACTIVE',
+        pesapal_consumer_key: formData.pesapalConsumerKey || undefined,
+        pesapal_consumer_secret: formData.pesapalConsumerSecret || undefined,
+      };
+      const response = await api.post('/api/admin/pharmacies', payload);
+      router.push('/admin/pharmacies');
     } catch (err: any) {
       setError(err.message || 'Failed to create pharmacy');
       setLoading(false);
