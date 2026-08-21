@@ -20,6 +20,11 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [isPesapalModalOpen, setIsPesapalModalOpen] = useState(false);
+  const [pesapalData, setPesapalData] = useState({
+    consumer_key: '',
+    consumer_secret: ''
+  });
 
   useEffect(() => {
     fetchPharmacy();
@@ -146,14 +151,22 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
           </CardContent>
         </Card>
         
-        <Card className="border-[#DCE7E3] shadow-sm">
-          <CardContent className="p-4 flex items-center gap-4">
-            <div className={`p-3 rounded-full ${pharmacy.pesapalConnected ? 'bg-[#0B8F6A]/10 text-[#0B8F6A]' : 'bg-[#F7FAF9] text-[#6B7773]'}`}>
-              <CreditCard className="w-6 h-6" />
+        <Card 
+          className="border-[#DCE7E3] shadow-sm cursor-pointer hover:border-[#0B8F6A] transition-colors"
+          onClick={() => setIsPesapalModalOpen(true)}
+        >
+          <CardContent className="p-4 flex flex-col justify-center h-full gap-2 relative">
+            <div className="flex items-center gap-4">
+              <div className={`p-3 rounded-full ${pharmacy.pesapalConnected ? 'bg-[#0B8F6A]/10 text-[#0B8F6A]' : 'bg-[#F7FAF9] text-[#6B7773]'}`}>
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[#6B7773]">PesaPal</p>
+                <p className="text-lg font-bold text-[#17211E]">{pharmacy.pesapalConnected ? 'Connected' : 'Disconnected'}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-[#6B7773]">PesaPal</p>
-              <p className="text-lg font-bold text-[#17211E]">{pharmacy.pesapalConnected ? 'Connected' : 'Disconnected'}</p>
+            <div className="absolute top-4 right-4 text-xs text-[#0B8F6A] font-medium opacity-0 hover:opacity-100 group-hover:opacity-100">
+              Configure
             </div>
           </CardContent>
         </Card>
@@ -268,6 +281,59 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
           </CardContent>
         </Card>
       </div>
+
+      {isPesapalModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="max-w-md w-full bg-white">
+            <CardHeader>
+              <CardTitle>PesaPal Configuration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                  setUpdating(true);
+                  // Use the main pharmacy update route which handles pesapal fields
+                  await api.patch(`/api/admin/pharmacies/${pharmacy.id}`, {
+                    pesapal_consumer_key: pesapalData.consumer_key,
+                    pesapal_consumer_secret: pesapalData.consumer_secret,
+                    pesapal_environment: 'LIVE'
+                  });
+                  setPharmacy((prev: any) => prev ? { ...prev, pesapalConnected: true } : null);
+                  setIsPesapalModalOpen(false);
+                } catch (err: any) {
+                  setError(err.message || 'Failed to update PesaPal settings');
+                } finally {
+                  setUpdating(false);
+                }
+              }} className="space-y-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#17211E]">Consumer Key</label>
+                  <Input 
+                    value={pesapalData.consumer_key}
+                    onChange={(e) => setPesapalData({ ...pesapalData, consumer_key: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#17211E]">Consumer Secret</label>
+                  <Input 
+                    type="password"
+                    value={pesapalData.consumer_secret}
+                    onChange={(e) => setPesapalData({ ...pesapalData, consumer_secret: e.target.value })}
+                    required
+                  />
+                </div>
+                
+                <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-[#DCE7E3]">
+                  <Button type="button" variant="outline" onClick={() => setIsPesapalModalOpen(false)}>Cancel</Button>
+                  <Button type="submit" disabled={updating} className="bg-[#0B8F6A] hover:bg-[#075C47] text-white">Save Credentials</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
