@@ -9,6 +9,17 @@ import { WhatsAppManager } from './manager.js';
 // Initialize Gemini Client
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+// Helper to save chat log without throwing
+async function saveChatLog(phoneNumber: string, sessionId: string, role: string, content: string) {
+    const { error } = await supabaseAdmin.from('chat_logs').insert({
+        phone_number: phoneNumber,
+        session_id: sessionId,
+        role,
+        content
+    });
+    if (error) logger.error(error, 'Failed to save chat log');
+}
+
 export const handleIncomingMessage = async (sessionId: string, message: WAMessage) => {
     try {
         const jid = message.key.remoteJid;
@@ -39,7 +50,7 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
         const pharmacyId = accountData.pharmacy_id;
 
         // 2. Fetch or Create Clinic (if message is from a clinic)
-        let clinicData = null;
+        let clinicData: any = null;
         let isOnboarding = false;
 
         if (!isFromPharmacy) {
@@ -54,23 +65,17 @@ export const handleIncomingMessage = async (sessionId: string, message: WAMessag
             if (!clinicData) {
                 const { data: newClinic } = await supabaseAdmin
                     .from('clinics')
-                    .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' }) // Wait, shared types status is string, but we added onboarding_status
+                    .insert({ phone_number: senderPhone, name: `Clinic ${senderPhone}`, status: 'PENDING' })
                     .select('*')
                     .single();
                 clinicData = newClinic;
             }
 
-            // For MVP, we check if they have a preferred driver name to know if onboarding is complete
-            // (Assuming onboarding_status might not be fully migrated in their old DB yet)
-            isOnboarding = !clinicData.preferred_driver_name;
+            // Check if onboarding is complete by looking for driver name
+            isOnboarding = !clinicData?.preferred_driver_name;
 
             // Save incoming message to chat history
-            await supabaseAdmin.from('chat_logs').insert({
-                phone_number: senderPhone,
-                session_id: sessionId,
-                role: 'user',
-                content: messageText
-            }).catch(e => logger.error('Failed to save chat log (table might not exist yet)'));
+            await saveChatLog(senderPhone, sessionId, 'user', messageText);
         }
 
         // Fetch dynamic system prompt
@@ -114,7 +119,7 @@ If you have successfully collected ALL the required information across the chat 
                     .limit(10);
                 
                 if (logs) {
-                    historyContents = logs.reverse().map(l => ({
+                    historyContents = logs.reverse().map((l: any) => ({
                         role: l.role === 'model' ? 'model' : 'user',
                         parts: [{ text: l.content }]
                     }));
@@ -130,9 +135,9 @@ If you have successfully collected ALL the required information across the chat 
 
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
-            systemInstruction: systemPrompt,
             contents: historyContents,
             config: {
+                systemInstruction: systemPrompt,
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
@@ -183,12 +188,7 @@ If you have successfully collected ALL the required information across the chat 
             await WhatsAppManager.getInstance().sendMessage(sessionId, jid, analysis.replyText);
             
             // Save bot reply to history
-            await supabaseAdmin.from('chat_logs').insert({
-                phone_number: senderPhone,
-                session_id: sessionId,
-                role: 'model',
-                content: analysis.replyText
-            }).catch(() => {});
+            await saveChatLog(senderPhone, sessionId, 'model', analysis.replyText);
             
         } else if (analysis.intent === 'ONBOARDING_COMPLETE' && analysis.clinicDetails && !isFromPharmacy) {
             
@@ -198,19 +198,13 @@ If you have successfully collected ALL the required information across the chat 
                 location: analysis.clinicDetails.location,
                 preferred_driver_name: analysis.clinicDetails.driverName,
                 preferred_driver_phone: analysis.clinicDetails.driverPhone,
-                // store additional phones as a JSON string array if column type is tricky, but let's assume it's a text array or we serialize it
                 additional_phones: analysis.clinicDetails.additionalPhones
             }).eq('phone_number', senderPhone);
 
             const successMsg = `✅ Welcome to Afya Links, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
             await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
 
-            await supabaseAdmin.from('chat_logs').insert({
-                phone_number: senderPhone,
-                session_id: sessionId,
-                role: 'model',
-                content: successMsg
-            }).catch(() => {});
+            await saveChatLog(senderPhone, sessionId, 'model', successMsg);
 
         } else if (analysis.intent === 'PRICE_ASSIGNMENT' && analysis.amount && isFromPharmacy) {
             if (!analysis.orderNumber) {
