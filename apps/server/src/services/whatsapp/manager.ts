@@ -92,6 +92,8 @@ export class WhatsAppManager {
 
     public removeSessionFromMemory(sessionId: string): void {
         this.sessions.delete(sessionId);
+        // Also wipe from disk
+        import('./store.js').then(m => m.deleteAuthState(sessionId)).catch(e => logger.error(e));
     }
 
     public async reconnectSession(sessionId: string): Promise<void> {

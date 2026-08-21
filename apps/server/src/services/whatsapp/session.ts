@@ -43,14 +43,26 @@ export class WhatsAppSession {
             this.socket = makeWASocket({
                 auth: state,
                 printQRInTerminal: false,
-                logger: logger.child({ module: 'baileys', sessionId: this.sessionId }) as any,
                 browser: Browsers.macOS('Desktop')
             });
+
+            // Fallback timeout in case Baileys hangs silently
+            const initTimeout = setTimeout(() => {
+                if (this.status === 'INITIALIZING') {
+                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 15s. Forcing fail.`);
+                    this.status = 'FAILED';
+                    this.disconnect();
+                }
+            }, 15000);
 
             this.socket?.ev.on('creds.update', saveCreds);
             
             this.socket?.ev.on('connection.update', async (update) => {
                 const { connection, lastDisconnect, qr } = update;
+
+                if (connection || qr) {
+                    clearTimeout(initTimeout);
+                }
 
                 if (qr) {
                     try {
