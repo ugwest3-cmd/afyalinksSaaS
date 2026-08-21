@@ -50,14 +50,21 @@ export default function HQPage() {
     if (isQrModalOpen && activeSessionId && qrStatus !== 'CONNECTED') {
       interval = setInterval(async () => {
         try {
-          const res = await api.get(`/api/admin/whatsapp/${activeSessionId}/qr`);
-          setQrStatus(res.status);
-          if (res.qrCode) {
-            setQrCode(res.qrCode);
-          }
-          if (res.status === 'CONNECTED') {
+          const statusRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/status`);
+          setQrStatus(statusRes?.status || 'INITIALIZING');
+          
+          if (statusRes?.status === 'CONNECTED') {
             setIsQrModalOpen(false);
             fetchData();
+            return;
+          }
+
+          // Fetch QR if ready
+          if (statusRes?.status === 'QR_READY' || qrStatus === 'INITIALIZING') {
+            const qrRes = await api.get(`/api/admin/whatsapp/${activeSessionId}/qr`);
+            if (qrRes?.qrCode) {
+              setQrCode(qrRes.qrCode);
+            }
           }
         } catch (error) {
           // Keep waiting
