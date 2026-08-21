@@ -5,7 +5,7 @@ import qrcode from 'qrcode';
 import { logger } from '../../config/logger.js';
 import { handleIncomingMessage } from './messageHandler.js';
 import { supabaseAdmin } from '../../config/supabase.js';
-import { boomify, failedDependency, internal } from '@hapi/boom';
+import { failedDependency, internal } from '@hapi/boom';
 
 export type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED';
 
@@ -31,6 +31,7 @@ export class WhatsAppSession {
         try {
             logger.info(`Starting connection for session ${this.sessionId}`);
             this.status = 'INITIALIZING';
+            this.lastError = null;
             
             this.client = new Client({
                 authStrategy: new LocalAuth({
@@ -46,20 +47,22 @@ export class WhatsAppSession {
                         '--disable-accelerated-2d-canvas',
                         '--no-first-run',
                         '--no-zygote',
-                        '--disable-gpu'
+                        '--disable-gpu',
+                        '--single-process'
                     ],
                     executablePath: process.env.CHROME_BIN || undefined
                 }
             });
 
+            // Give Chromium up to 90 seconds to start on Railway (cold boot can be slow)
             const initTimeout = setTimeout(() => {
                 if (this.status === 'INITIALIZING') {
-                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 30s. Forcing fail.`);
+                    logger.error(`Session ${this.sessionId} hung on INITIALIZING for 90s. Forcing fail.`);
                     this.status = 'FAILED';
-                    this.lastError = 'Browser engine failed to start';
+                    this.lastError = 'Browser engine timed out starting. Please try again.';
                     this.disconnect();
                 }
-            }, 30000);
+            }, 90000);
 
             this.client.on('qr', async (qr) => {
                 clearTimeout(initTimeout);
@@ -87,14 +90,16 @@ export class WhatsAppSession {
                 logger.info(`Session ${this.sessionId} authenticated`);
             });
 
-            this.client.on('auth_failure', (msg) => {
+            this.client.on('auth_failure', async (msg) => {
                 clearTimeout(initTimeout);
                 logger.error(`Session ${this.sessionId} authentication failed: ${msg}`);
                 this.status = 'FAILED';
-                this.lastError = msg;
+                this.lastError = `Auth failed: ${msg}. Please delete and re-connect.`;
+                await supabaseAdmin.from('whatsapp_accounts').update({ status: 'DISCONNECTED' }).eq('session_id', this.sessionId);
             });
 
             this.client.on('disconnected', async (reason) => {
+                clearTimeout(initTimeout);
                 logger.warn(`Session ${this.sessionId} disconnected: ${reason}`);
                 
                 if (reason === 'NAVIGATION' as any || reason === 'CONFLICT' as any) {

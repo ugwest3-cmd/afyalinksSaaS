@@ -31,8 +31,21 @@ export class WhatsAppManager {
 
             if (accounts && accounts.length > 0) {
                 logger.info(`Found ${accounts.length} active WhatsApp sessions to restore.`);
+                
+                // Check if the auth directory exists before trying to reconnect
+                const fs = await import('fs');
+                
                 for (const acc of accounts) {
-                    await this.createSession(acc.session_id, acc.pharmacy_id, acc.phone_number, true);
+                    const authPath = `./whatsapp_sessions/session-${acc.session_id}`;
+                    if (fs.existsSync(authPath)) {
+                        logger.info(`Auth folder found for ${acc.session_id}, restoring...`);
+                        await this.createSession(acc.session_id, acc.pharmacy_id, acc.phone_number, true);
+                    } else {
+                        logger.warn(`No auth folder for ${acc.session_id}. Marking as DISCONNECTED. Admin must re-scan QR.`);
+                        await supabaseAdmin.from('whatsapp_accounts')
+                            .update({ status: 'DISCONNECTED' })
+                            .eq('session_id', acc.session_id);
+                    }
                 }
             } else {
                 logger.info('No active WhatsApp sessions found in DB.');
