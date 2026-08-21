@@ -135,6 +135,24 @@ export default function PharmacyDetailPage({ params }: { params: { id: string } 
               Edit
             </Button>
           </Link>
+          <Button 
+            variant="danger"
+            onClick={async () => {
+              if (confirm('Are you sure you want to completely delete this pharmacy? This cannot be undone.')) {
+                try {
+                  setUpdating(true);
+                  await api.delete(`/api/admin/pharmacies/${pharmacy.id}`);
+                  router.push('/admin/pharmacies');
+                } catch (err: any) {
+                  setError(err.message || 'Failed to delete pharmacy');
+                  setUpdating(false);
+                }
+              }
+            }}
+            disabled={updating}
+          >
+            Delete
+          </Button>
         </div>
       </div>
 

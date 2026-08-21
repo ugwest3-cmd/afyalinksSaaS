@@ -49,7 +49,8 @@ export class WhatsAppSession {
                         '--no-zygote',
                         '--disable-gpu',
                         '--single-process'
-                    ]
+                    ],
+                    executablePath: process.env.CHROME_BIN || '/usr/bin/chromium'
                 }
             });
 
