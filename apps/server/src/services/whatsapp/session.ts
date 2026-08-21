@@ -34,7 +34,7 @@ export class WhatsAppSession {
             
             // Force puppeteer to use local cache if env var isn't loaded yet
             if (!process.env.PUPPETEER_CACHE_DIR) {
-                process.env.PUPPETEER_CACHE_DIR = '/app/.cache/puppeteer';
+                process.env.PUPPETEER_CACHE_DIR = '/app/puppeteer_browser';
             }
             
             this.client = new Client({

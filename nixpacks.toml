@@ -16,7 +16,7 @@ nixPkgs = [
 ]
 
 [variables]
-PUPPETEER_CACHE_DIR = "/app/.cache/puppeteer"
+PUPPETEER_CACHE_DIR = "/app/puppeteer_browser"
 
 [phases.build]
 cmds = [
