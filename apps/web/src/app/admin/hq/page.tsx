@@ -5,11 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Modal } from '@/components/ui/modal';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Plus, RefreshCw, Trash2, QrCode, Loader2, Bot } from 'lucide-react';
 import { api } from '@/lib/api';
-import { QRCodeSVG } from 'qrcode.react';
 
 export default function HQPage() {
   const [sessions, setSessions] = useState<any[]>([]);
@@ -201,61 +200,55 @@ export default function HQPage() {
       </Card>
 
       {/* Connect Modal */}
-      <Dialog open={isConnectModalOpen} onOpenChange={setIsConnectModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Connect HQ WhatsApp</DialogTitle>
-            <DialogDescription>
-              Enter the phone number for the central routing system.
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleConnect} className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Phone Number</Label>
-              <Input 
-                value={phoneNumber}
-                onChange={e => setPhoneNumber(e.target.value)}
-                placeholder="+256700000000"
-                required
-              />
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <Button type="button" variant="outline" onClick={() => setIsConnectModalOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-[#0B8F6A] hover:bg-[#075C47]" disabled={isConnecting}>
-                {isConnecting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
-                Connect
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <Modal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        title="Connect HQ WhatsApp"
+        description="Enter the phone number for the central routing system."
+      >
+        <form onSubmit={handleConnect} className="space-y-4 pt-4">
+          <div className="space-y-2">
+            <Label>Phone Number</Label>
+            <Input 
+              value={phoneNumber}
+              onChange={e => setPhoneNumber(e.target.value)}
+              placeholder="+256700000000"
+              required
+            />
+          </div>
+          <div className="flex justify-end pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsConnectModalOpen(false)} className="mr-2">Cancel</Button>
+            <Button type="submit" className="bg-[#0B8F6A] hover:bg-[#075C47]" loading={isConnecting}>
+              Connect
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* QR Code Modal */}
-      <Dialog open={isQrModalOpen} onOpenChange={setIsQrModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Scan QR Code</DialogTitle>
-            <DialogDescription>
-              Open WhatsApp on your phone and link a device.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center p-6 space-y-4">
-            {qrCode ? (
-              <div className="p-4 bg-white rounded-xl shadow-sm border border-[#DCE7E3]">
-                <QRCodeSVG value={qrCode} size={256} />
+      <Modal
+        isOpen={isQrModalOpen}
+        onClose={() => setIsQrModalOpen(false)}
+        title="Scan QR Code"
+        description="Open WhatsApp on your phone and link a device."
+      >
+        <div className="flex flex-col items-center justify-center p-6 min-h-[300px]">
+          {qrCode ? (
+            <div className="space-y-4 text-center">
+              <div className="bg-white p-4 rounded-xl border border-border shadow-sm inline-block">
+                <img src={qrCode} alt="WhatsApp QR Code" className="w-64 h-64 object-contain" />
               </div>
-            ) : (
-              <div className="flex flex-col items-center py-12 text-[#6B7773]">
-                <Loader2 className="w-8 h-8 animate-spin mb-4" />
-                <p>Generating QR Code...</p>
-              </div>
-            )}
-            <p className="text-sm text-center text-muted">
-              Status: <span className="font-semibold">{qrStatus}</span>
-            </p>
-          </div>
-        </DialogContent>
-      </Dialog>
+              <p className="text-sm font-medium text-primary animate-pulse">Waiting for scan...</p>
+            </div>
+          ) : (
+            <div className="space-y-4 text-center text-muted flex flex-col items-center">
+              <Loader2 className="w-10 h-10 animate-spin text-primary" />
+              <p>Generating secure QR code...</p>
+              <p className="text-xs">Status: {qrStatus}</p>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
