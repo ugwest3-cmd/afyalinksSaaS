@@ -15,6 +15,7 @@
     "@afya-links/shared": "workspace:*",
     "@google/genai": "^2.18.0",
     "@hapi/boom": "^10.0.1",
+    "@puppeteer/browsers": "^3.2.1",
     "@supabase/supabase-js": "^2.45.0",
     "axios": "^1.7.0",
     "cors": "^2.8.5",

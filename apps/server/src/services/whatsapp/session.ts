@@ -29,17 +29,40 @@ export class WhatsAppSession {
 
     public async connect(): Promise<void> {
         try {
-            logger.info(`Starting connection for session ${this.sessionId}`);
-            this.status = 'INITIALIZING';
-            
-            // Find the system Chromium installed by Nixpacks
-            let sysChromePath = '/usr/bin/chromium';
+            // Download Chromium to the persistent volume if it doesn't exist
+            let browserPath = '';
             try {
-                const { execSync } = await import('child_process');
-                sysChromePath = execSync('which chromium || which chromium-browser || echo "/usr/bin/chromium"', { encoding: 'utf-8' }).trim();
-                logger.info(`System Chromium found at: ${sysChromePath}`);
-            } catch (e) {
-                logger.warn('Failed to detect Chromium path, using default');
+                const fs = await import('fs');
+                const path = await import('path');
+                const { install, resolveBuildId, Browser, detectBrowserPlatform } = await import('@puppeteer/browsers');
+                
+                const cacheDir = path.resolve('./whatsapp_sessions/chrome');
+                if (!fs.existsSync(cacheDir)) {
+                    fs.mkdirSync(cacheDir, { recursive: true });
+                }
+                
+                logger.info('Resolving Chromium build ID...');
+                const platform = detectBrowserPlatform();
+                if (!platform) throw new Error('Unsupported platform');
+                
+                const buildId = await resolveBuildId(Browser.CHROME, platform, 'latest');
+                logger.info(`Resolved build ID: ${buildId}. Checking local cache...`);
+                
+                const installInfo = await install({
+                    cacheDir,
+                    browser: Browser.CHROME,
+                    buildId,
+                    downloadProgressCallback: (downloaded, total) => {
+                        const percent = Math.round((downloaded / total) * 100);
+                        if (percent % 20 === 0) logger.info(`Downloading Chrome: ${percent}%`);
+                    }
+                });
+                
+                browserPath = installInfo.executablePath;
+                logger.info(`Chromium ready at: ${browserPath}`);
+            } catch (error: any) {
+                logger.error(error, 'Failed to download Chromium to persistent volume');
+                throw new Error(`Failed to download Chrome: ${error.message}`);
             }
 
             this.client = new Client({
@@ -58,7 +81,7 @@ export class WhatsAppSession {
                         '--no-zygote',
                         '--disable-gpu'
                     ],
-                    executablePath: sysChromePath
+                    executablePath: browserPath
                 }
             });
 

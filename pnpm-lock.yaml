@@ -26,6 +26,9 @@ importers:
       '@hapi/boom':
         specifier: ^10.0.1
         version: 10.0.1
+      '@puppeteer/browsers':
+        specifier: ^3.2.1
+        version: 3.2.1(yauzl@2.10.0)
       '@supabase/supabase-js':
         specifier: ^2.45.0
         version: 2.112.3
