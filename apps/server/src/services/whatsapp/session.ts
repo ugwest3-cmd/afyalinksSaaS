@@ -3,7 +3,7 @@ import qrcode from 'qrcode';
 import { logger } from '../../config/logger.js';
 import { handleIncomingMessage } from './messageHandler.js';
 import { supabaseAdmin } from '../../config/supabase.js';
-import { Boom } from '@hapi/boom';
+import { boomify, failedDependency, internal } from '@hapi/boom';
 
 export type SessionStatus = 'INITIALIZING' | 'QR_READY' | 'CONNECTED' | 'DISCONNECTED' | 'FAILED';
 
@@ -95,7 +95,7 @@ export class WhatsAppSession {
             this.client.on('disconnected', async (reason) => {
                 logger.warn(`Session ${this.sessionId} disconnected: ${reason}`);
                 
-                if (reason === 'NAVIGATION' || reason === 'CONFLICT') {
+                if (reason === 'NAVIGATION' as any || reason === 'CONFLICT' as any) {
                     this.handleReconnect();
                 } else {
                     this.status = 'DISCONNECTED';
@@ -153,7 +153,7 @@ export class WhatsAppSession {
 
     public async sendMessage(to: string, text: string): Promise<void> {
         if (!this.client || this.status !== 'CONNECTED') {
-            throw Boom.failedDependency(`Session ${this.sessionId} is not connected`);
+            throw failedDependency(`Session ${this.sessionId} is not connected`);
         }
         
         try {
@@ -164,7 +164,7 @@ export class WhatsAppSession {
             logger.info(`Message sent successfully to ${to} via session ${this.sessionId}`);
         } catch (error) {
             logger.error(error, `Failed to send message to ${to} via session ${this.sessionId}`);
-            throw Boom.internal('Failed to send WhatsApp message');
+            throw internal('Failed to send WhatsApp message');
         }
     }
     public getStatus(): SessionStatus {

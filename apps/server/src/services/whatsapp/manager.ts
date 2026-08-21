@@ -129,12 +129,4 @@ export class WhatsAppManager {
         await session.sendMessage(jid, text);
     }
 
-    public async sendMediaMessage(sessionId: string, to: string, mediaUrl: string, caption?: string): Promise<void> {
-        const session = this.getSession(sessionId);
-        if (!session) {
-            throw new Error(`Session ${sessionId} not found`);
-        }
-        const jid = to.includes('@s.whatsapp.net') ? to : `${to}@s.whatsapp.net`;
-        await session.sendMedia(jid, mediaUrl, caption);
-    }
 }
