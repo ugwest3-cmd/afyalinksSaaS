@@ -1,4 +1,6 @@
-import { Client, LocalAuth } from 'whatsapp-web.js';
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
+import type { Client as ClientType } from 'whatsapp-web.js';
 import qrcode from 'qrcode';
 import { logger } from '../../config/logger.js';
 import { handleIncomingMessage } from './messageHandler.js';
@@ -15,7 +17,7 @@ export class WhatsAppSession {
     public qrCode: string | null = null;
     public lastError: string | null = null;
     
-    private client: Client | null = null;
+    private client: ClientType | null = null;
     private reconnectAttempts = 0;
     private maxReconnectAttempts = 5;
 

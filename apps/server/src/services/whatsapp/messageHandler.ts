@@ -1,4 +1,4 @@
-import { Message } from 'whatsapp-web.js';
+import type { Message } from 'whatsapp-web.js';
 import { logger } from '../../config/logger.js';
 import { supabaseAdmin } from '../../config/supabase.js';
 import { GoogleGenAI, Type } from '@google/genai';
