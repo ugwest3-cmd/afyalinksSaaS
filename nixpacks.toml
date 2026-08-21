@@ -1,7 +1,6 @@
 [phases.setup]
 nixPkgs = [
   "...",
-  "chromium",
   "nss",
   "freetype",
   "harfbuzz",
