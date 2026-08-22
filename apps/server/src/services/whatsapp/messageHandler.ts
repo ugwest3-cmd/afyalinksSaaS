@@ -394,6 +394,7 @@ STRICT RULES FOR ONBOARDING:
                     // Format number (remove + or 0, prefix with country code)
                     let staffJid = pharmacyInfo.phone.replace(/\D/g, '');
                     if (staffJid.startsWith('0')) staffJid = '256' + staffJid.substring(1);
+                    else if (staffJid.length === 9) staffJid = '256' + staffJid;
                     staffJid += '@c.us';
 
                     const notifyMsg = `🛒 *NEW AFYA LINKS ORDER*\nOrder: ${order.order_number}\nClinic: ${clinicData?.name || senderPhone}\n\nDetails:\n${messageText}\n\n*Please review the order and reply with the total price (e.g. "${order.order_number} 50000").*`;
