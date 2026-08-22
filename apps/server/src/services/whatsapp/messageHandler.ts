@@ -25,7 +25,8 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
         if (!jid || jid === 'status@broadcast') return;
         if (jid.endsWith('@g.us')) return; // Ignore group messages
 
-        const senderPhone = jid.split('@')[0];
+        const contact = await message.getContact();
+        const senderPhone = contact.number || jid.split('@')[0];
         const isFromMe = message.fromMe === true;
 
         if (isFromMe) return; // Ignore messages we sent ourselves
