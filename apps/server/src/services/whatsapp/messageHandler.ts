@@ -229,8 +229,12 @@ INTENTS:
             isOnboarding = !clinicData?.preferred_driver_name;
             await saveChatLog(senderPhone, sessionId, 'user', messageText);
 
-            let systemPrompt = `You are the AI assistant for a wholesale pharmacy operating on the Afya Links platform.
-Afya Links connects local clinics directly to wholesale pharmacies via WhatsApp.
+            const { data: pharmacyInfo_top } = await supabaseAdmin.from('pharmacies').select('name').eq('id', pharmacyId).single();
+            const pharmacyName = pharmacyInfo_top?.name || "our wholesale pharmacy";
+
+            let systemPrompt = `You are the AI assistant for ${pharmacyName}.
+DO NOT say you are from Afya Links. You represent ${pharmacyName} directly.
+(Afya Links is just the underlying platform connecting local clinics to ${pharmacyName} via WhatsApp).
 
 HOW THE PLATFORM WORKS:
 1. Clinics (who you are talking to) text their medicine orders to this WhatsApp number.
@@ -327,7 +331,7 @@ ONCE they have provided ALL FOUR details across the conversation, set the intent
                     additional_phones: analysis.clinicDetails.additionalPhones
                 }).eq('phone', senderPhone);
 
-                const successMsg = `✅ Welcome to Afya Links, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
+                const successMsg = `✅ Welcome to ${pharmacyName}, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
                 await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
                 await saveChatLog(senderPhone, sessionId, 'model', successMsg);
 
