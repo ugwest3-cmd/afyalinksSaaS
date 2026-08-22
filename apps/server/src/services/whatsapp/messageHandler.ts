@@ -124,7 +124,7 @@ INTENTS:
 - For anything else (questions, chat): intent MUST be 'CONVERSATIONAL_REPLY' and respond in 'replyText'. Be helpful.`;
 
             const response = await ai.models.generateContent({
-                model: 'gemini-3.6-flash',
+                model: 'gemini-1.5-flash',
                 contents: historyContents,
                 config: {
                     systemInstruction: systemPrompt,
@@ -282,7 +282,7 @@ STRICT RULES FOR ONBOARDING:
             }
 
             const response = await ai.models.generateContent({
-                model: 'gemini-3.6-flash',
+                model: 'gemini-1.5-flash',
                 contents: historyContents,
                 config: {
                     systemInstruction: systemPrompt,
