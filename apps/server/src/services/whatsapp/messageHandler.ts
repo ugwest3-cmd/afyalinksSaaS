@@ -265,11 +265,12 @@ You MUST collect the following information from them to complete registration:
 3. Preferred Delivery Driver Name
 4. Preferred Delivery Driver Phone Number
 
-STRICT RULE: You must ask for these details ONE AT A TIME, step-by-step, to make onboarding easy. 
-DO NOT ask for multiple pieces of information in a single message.
-Wait for their answer to the current question before moving to the next.
-Set intent to 'CONVERSATIONAL_REPLY' to ask questions.
-ONCE they have provided ALL FOUR details across the conversation, set the intent to 'ONBOARDING_COMPLETE' and populate the 'clinicDetails' object.`;
+STRICT RULES FOR ONBOARDING:
+- You must ask for these details ONE AT A TIME, step-by-step. DO NOT ask for multiple pieces of information in a single message.
+- Wait for their answer to the current question before moving to the next.
+- Set intent to 'CONVERSATIONAL_REPLY' to ask questions.
+- ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE' and populate the 'clinicDetails' object.
+- DATA EXTRACTION RULE: When populating 'clinicDetails', extract ONLY the clean, exact information provided by the user. Keep it concise. Do NOT add conversational text, question marks, or hallucinated characters to the JSON fields!`;
             } else {
                 systemPrompt += `\n\nThe clinic's account is fully set up. If they list medicines, set intent to 'NEW_ORDER'. Do NOT say you will place the order in 'replyText', just use 'NEW_ORDER' intent and the system will automatically notify them.`;
             }
