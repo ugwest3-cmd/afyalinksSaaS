@@ -30,40 +30,57 @@ export class WhatsAppSession {
     public async connect(): Promise<void> {
         try {
             // Download Chromium to the persistent volume if it doesn't exist
-            let browserPath = '';
+            let browserPath = process.env.PUPPETEER_EXECUTABLE_PATH || '';
             try {
-                const fs = await import('fs');
-                const path = await import('path');
-                const { install, resolveBuildId, Browser, detectBrowserPlatform } = await import('@puppeteer/browsers');
-                const { getSessionStoragePath } = await import('./config.js');
-                
-                const cacheDir = path.resolve(getSessionStoragePath(), 'chrome');
-                if (!fs.existsSync(cacheDir)) {
-                    fs.mkdirSync(cacheDir, { recursive: true });
+                const { execSync } = await import('child_process');
+                if (!browserPath) {
+                    try { browserPath = execSync('which chromium').toString().trim(); } catch (e) {}
                 }
-                
-                logger.info('Resolving Chromium build ID...');
-                const platform = detectBrowserPlatform();
-                if (!platform) throw new Error('Unsupported platform');
-                
-                const buildId = await resolveBuildId(Browser.CHROME, platform, 'latest');
-                logger.info(`Resolved build ID: ${buildId}. Checking local cache...`);
-                
-                const installInfo = await install({
-                    cacheDir,
-                    browser: Browser.CHROME,
-                    buildId,
-                    downloadProgressCallback: (downloaded, total) => {
-                        const percent = Math.round((downloaded / total) * 100);
-                        if (percent % 20 === 0) logger.info(`Downloading Chrome: ${percent}%`);
+                if (!browserPath) {
+                    try { browserPath = execSync('which chromium-browser').toString().trim(); } catch (e) {}
+                }
+                if (!browserPath) {
+                    try { browserPath = execSync('which google-chrome').toString().trim(); } catch (e) {}
+                }
+            } catch (e) {}
+
+            if (!browserPath) {
+                try {
+                    const fs = await import('fs');
+                    const path = await import('path');
+                    const { install, resolveBuildId, Browser, detectBrowserPlatform } = await import('@puppeteer/browsers');
+                    const { getSessionStoragePath } = await import('./config.js');
+                    
+                    const cacheDir = path.resolve(getSessionStoragePath(), 'chrome');
+                    if (!fs.existsSync(cacheDir)) {
+                        fs.mkdirSync(cacheDir, { recursive: true });
                     }
-                });
-                
-                browserPath = installInfo.executablePath;
-                logger.info(`Chromium ready at: ${browserPath}`);
-            } catch (error: any) {
-                logger.error(error, 'Failed to download Chromium to persistent volume');
-                throw new Error(`Failed to download Chrome: ${error.message}`);
+                    
+                    logger.info('Resolving Chromium build ID...');
+                    const platform = detectBrowserPlatform();
+                    if (!platform) throw new Error('Unsupported platform');
+                    
+                    const buildId = await resolveBuildId(Browser.CHROME, platform, 'latest');
+                    logger.info(`Resolved build ID: ${buildId}. Checking local cache...`);
+                    
+                    const installInfo = await install({
+                        cacheDir,
+                        browser: Browser.CHROME,
+                        buildId,
+                        downloadProgressCallback: (downloaded, total) => {
+                            const percent = Math.round((downloaded / total) * 100);
+                            if (percent % 20 === 0) logger.info(`Downloading Chrome: ${percent}%`);
+                        }
+                    });
+                    
+                    browserPath = installInfo.executablePath;
+                    logger.info(`Chromium ready at: ${browserPath}`);
+                } catch (error: any) {
+                    logger.error(error, 'Failed to download Chromium to persistent volume');
+                    throw new Error(`Failed to download Chrome: ${error.message}`);
+                }
+            } else {
+                logger.info(`Using system Chromium at: ${browserPath}`);
             }
 
             const { getSessionStoragePath } = await import('./config.js');
