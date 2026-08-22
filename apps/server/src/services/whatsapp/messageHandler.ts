@@ -105,6 +105,32 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
             
             await saveChatLog(senderPhone, sessionId, 'user', messageText);
 
+            // Fast-path regex bypass for direct pricing commands to avoid Gemini hallucination
+            const directMatch = messageText.trim().match(/^(AFY-\d{4}-\d{6})\s*([0-9,]+)(?:\s*[a-zA-Z]+)?$/i);
+            if (directMatch) {
+                const orderNumber = directMatch[1].toUpperCase();
+                const amount = parseFloat(directMatch[2].replace(/,/g, ''));
+                if (amount > 0) {
+                    const order = await orderService.getOrderByNumber(orderNumber);
+                    if (order) {
+                        await orderService.updateOrderAmount(order.id, amount);
+                        const paymentLink = await paymentService.getPaymentRedirectUrl(order.order_number);
+                        const { data: botAccount } = await supabaseAdmin.from('whatsapp_accounts').select('session_id').eq('pharmacy_id', order.pharmacy_id).eq('is_system', false).single();
+                        
+                        if (botAccount) {
+                            const clinicPhone = order.customer_phone;
+                            const msgToClinic = `Your order ${order.order_number} has been reviewed by the pharmacy.\n\n*Total Amount:* UGX ${amount.toLocaleString()}\n\nPlease complete your payment securely here:\n${paymentLink}`;
+                            await WhatsAppManager.getInstance().sendMessage(botAccount.session_id, `${clinicPhone}@s.whatsapp.net`, msgToClinic);
+                        }
+
+                        const successMsg = `✅ Price of UGX ${amount.toLocaleString()} set for ${order.order_number}. Payment link has been sent to the clinic.`;
+                        await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
+                        await saveChatLog(senderPhone, sessionId, 'model', successMsg);
+                        return;
+                    }
+                }
+            }
+
             const systemPrompt = `You are the internal AI assistant for Afya Links, communicating with wholesale pharmacy staff.
 Afya Links is a SaaS platform that connects clinics to wholesale pharmacies via WhatsApp.
 
@@ -120,7 +146,7 @@ You read messages from the pharmacy staff.
 When the staff replies, they might just say "ORD-123 50000", or they might say "We don't have Panadol, but we have Paracetamol. Total for ORD-123 is 45000".
 
 INTENTS:
-- If the staff is setting a price for an order: intent MUST be 'PRICE_UPDATE'. Extract the order number into 'orderNumber', the final numerical amount into 'amount' (as a number), and ANY message they want passed to the clinic into 'messageForClinic' (e.g. "We replaced Panadol with Paracetamol").
+- If the staff is setting a price for an order: intent MUST be 'PRICE_UPDATE'. Extract the order number into 'orderNumber', the final numerical amount into 'amount' (as a string, e.g. "50000"), and ANY message they want passed to the clinic into 'messageForClinic' (e.g. "We replaced Panadol with Paracetamol").
 - For anything else (questions, chat): intent MUST be 'CONVERSATIONAL_REPLY' and respond in 'replyText'. Be helpful.`;
 
             const response = await ai.models.generateContent({
@@ -135,7 +161,7 @@ INTENTS:
                             intent: { type: Type.STRING, description: "Must be 'PRICE_UPDATE', 'CONVERSATIONAL_REPLY', or 'UNKNOWN'" },
                             replyText: { type: Type.STRING },
                             orderNumber: { type: Type.STRING },
-                            amount: { type: Type.NUMBER },
+                            amount: { type: Type.STRING },
                             messageForClinic: { type: Type.STRING, description: "Optional message to pass to the clinic about stock changes, alternatives, or notes." }
                         },
                         required: ["intent"]
@@ -163,7 +189,16 @@ INTENTS:
             } 
             else if (analysis.intent === 'PRICE_UPDATE' && analysis.orderNumber && analysis.amount) {
                 const orderNumber = analysis.orderNumber.toUpperCase();
-                const amount = analysis.amount;
+                let amountStr = String(analysis.amount).replace(/,/g, '');
+                const amountMatch = amountStr.match(/(\d+(\.\d+)?)/);
+                const amount = amountMatch ? parseFloat(amountMatch[1]) : 0;
+                
+                if (!amount || amount <= 0) {
+                    const errorMsg = "Could not parse the amount. Please reply with the Order ID and a valid numerical amount (e.g. 'AFY-2026-000009 50000').";
+                    await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errorMsg);
+                    return;
+                }
+
                 const order = await orderService.getOrderByNumber(orderNumber);
                 
                 if (!order) {
