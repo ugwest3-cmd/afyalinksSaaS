@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 interface Clinic {
   id: string;
   name: string;
-  phone_number: string;
+  phone: string;
   location: string;
   preferred_driver_name: string;
   preferred_driver_phone: string;
@@ -28,7 +28,7 @@ export default function ClinicsPage() {
 
   const [formData, setFormData] = useState({
     name: '',
-    phone_number: '',
+    phone: '',
     location: '',
     preferred_driver_name: '',
     preferred_driver_phone: ''
@@ -55,14 +55,14 @@ export default function ClinicsPage() {
       setEditingClinic(clinic);
       setFormData({
         name: clinic.name || '',
-        phone_number: clinic.phone_number || '',
+        phone: clinic.phone || '',
         location: clinic.location || '',
         preferred_driver_name: clinic.preferred_driver_name || '',
         preferred_driver_phone: clinic.preferred_driver_phone || ''
       });
     } else {
       setEditingClinic(null);
-      setFormData({ name: '', phone_number: '', location: '', preferred_driver_name: '', preferred_driver_phone: '' });
+      setFormData({ name: '', phone: '', location: '', preferred_driver_name: '', preferred_driver_phone: '' });
     }
     setIsModalOpen(true);
   };
@@ -147,7 +147,7 @@ export default function ClinicsPage() {
                   clinics.map((clinic) => (
                     <TableRow key={clinic.id} className="hover:bg-[#F7FAF9] transition-colors">
                       <TableCell className="font-medium text-[#17211E]">{clinic.name}</TableCell>
-                      <TableCell className="text-[#4E5955]">{clinic.phone_number}</TableCell>
+                      <TableCell className="text-[#4E5955]">{clinic.phone}</TableCell>
                       <TableCell className="text-[#4E5955]">{clinic.location || 'N/A'}</TableCell>
                       <TableCell className="text-[#4E5955]">{clinic.preferred_driver_name || 'N/A'}</TableCell>
                       <TableCell className="text-[#4E5955]">{clinic.preferred_driver_phone || 'N/A'}</TableCell>
@@ -196,8 +196,8 @@ export default function ClinicsPage() {
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-[#17211E]">Phone Number</label>
                   <Input 
-                    value={formData.phone_number}
-                    onChange={(e) => setFormData({ ...formData, phone_number: e.target.value })}
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     required
                     placeholder="e.g. 256700000000"
                   />

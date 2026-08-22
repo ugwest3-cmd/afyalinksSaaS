@@ -23,13 +23,13 @@ router.get('/', async (req: Request, res: Response) => {
 // Create new clinic
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, phone_number, location, preferred_driver_name, preferred_driver_phone, additional_phones } = req.body;
+        const { name, phone, location, preferred_driver_name, preferred_driver_phone, additional_phones } = req.body;
         
         const { data, error } = await supabaseAdmin
             .from('clinics')
             .insert({
                 name,
-                phone_number,
+                phone,
                 location,
                 preferred_driver_name,
                 preferred_driver_phone,
@@ -50,13 +50,13 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, phone_number, location, preferred_driver_name, preferred_driver_phone, additional_phones } = req.body;
+        const { name, phone, location, preferred_driver_name, preferred_driver_phone, additional_phones } = req.body;
         
         const { data, error } = await supabaseAdmin
             .from('clinics')
             .update({
                 name,
-                phone_number,
+                phone,
                 location,
                 preferred_driver_name,
                 preferred_driver_phone,
