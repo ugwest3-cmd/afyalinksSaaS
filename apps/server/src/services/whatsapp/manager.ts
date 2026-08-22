@@ -141,7 +141,7 @@ export class WhatsAppManager {
         if (!session) {
             throw new Error(`Session ${sessionId} not found`);
         }
-        const jid = to.includes('@s.whatsapp.net') ? to : `${to}@s.whatsapp.net`;
+        const jid = to.includes('@') ? to : `${to}@s.whatsapp.net`;
         await session.sendMessage(jid, text);
     }
 

@@ -23,6 +23,7 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
     try {
         const jid = message.from;
         if (!jid || jid === 'status@broadcast') return;
+        if (jid.endsWith('@g.us')) return; // Ignore group messages
 
         const senderPhone = jid.split('@')[0];
         const isFromMe = message.fromMe === true;
@@ -117,7 +118,7 @@ INTENTS:
 - For anything else (questions, chat): intent MUST be 'CONVERSATIONAL_REPLY' and respond in 'replyText'. Be helpful.`;
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-3.6-flash',
                 contents: historyContents,
                 config: {
                     systemInstruction: systemPrompt,
@@ -267,7 +268,7 @@ ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE
             }
 
             const response = await ai.models.generateContent({
-                model: 'gemini-2.0-flash',
+                model: 'gemini-3.6-flash',
                 contents: historyContents,
                 config: {
                     systemInstruction: systemPrompt,
