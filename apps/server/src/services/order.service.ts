@@ -74,6 +74,7 @@ export class OrderService {
           pharmacy_id: data.pharmacyId,
           clinic_id: clinic.id,
           whatsapp_account_id: waAccountId,
+          customer_phone: data.clinicPhone,
           status: 'RECEIVED'
         })
         .select()
