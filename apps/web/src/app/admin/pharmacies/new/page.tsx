@@ -19,7 +19,7 @@ export default function NewPharmacyPage() {
     name: '',
     legalName: '',
     phone: '',
-    staffPhoneNumber: '',
+
     email: '',
     address: '',
     city: '',
@@ -51,7 +51,7 @@ export default function NewPharmacyPage() {
         name: formData.name,
         legal_name: formData.legalName || null,
         phone: formData.phone,
-        staff_phone_number: formData.staffPhoneNumber || null,
+
         email: formData.email || null,
         address: formData.address || null,
         city: formData.city || null,
@@ -126,15 +126,7 @@ export default function NewPharmacyPage() {
                 className="border-[#DCE7E3] focus-visible:ring-[#0B8F6A]"
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="staffPhoneNumber" className="text-[#17211E]">Staff/Owner WhatsApp Number</Label>
-              <Input 
-                id="staffPhoneNumber" name="staffPhoneNumber" 
-                value={formData.staffPhoneNumber} onChange={handleChange} 
-                placeholder="+256... (For receiving orders)"
-                className="border-[#DCE7E3] focus-visible:ring-[#0B8F6A]"
-              />
-            </div>
+
             <div className="space-y-2">
               <Label htmlFor="email" className="text-[#17211E]">Email Address</Label>
               <Input 
