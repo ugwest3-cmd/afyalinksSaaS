@@ -323,13 +323,20 @@ ONCE they have provided ALL FOUR details across the conversation, set the intent
                 await saveChatLog(senderPhone, sessionId, 'model', analysis.replyText);
                 
             } else if (analysis.intent === 'ONBOARDING_COMPLETE' && analysis.clinicDetails) {
-                await supabaseAdmin.from('clinics').update({
+                const { error: updateError } = await supabaseAdmin.from('clinics').update({
                     name: analysis.clinicDetails.clinicName,
                     location: analysis.clinicDetails.location,
                     preferred_driver_name: analysis.clinicDetails.driverName,
                     preferred_driver_phone: analysis.clinicDetails.driverPhone,
                     additional_phones: analysis.clinicDetails.additionalPhones
                 }).eq('phone', senderPhone);
+
+                if (updateError) {
+                    logger.error(updateError, `Failed to update clinic details for ${senderPhone}`);
+                    const errorMsg = "I'm sorry, I couldn't save your details due to a database error. Please contact support.";
+                    await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errorMsg);
+                    return;
+                }
 
                 const successMsg = `✅ Welcome to ${pharmacyName}, ${analysis.clinicDetails.clinicName}! Your account is fully set up.\n\nYou can now place orders by simply texting your list of medicines here.`;
                 await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
