@@ -386,20 +386,21 @@ STRICT RULES FOR ONBOARDING:
                 
                 await WhatsAppManager.getInstance().sendMessage(sessionId, jid, `✅ Order received! Your Order ID is ${order.order_number}. I have forwarded this to the pharmacy for pricing. You will receive a payment link shortly.`);
 
-                // Find System Session and Pharmacy Staff Phone
+                // Find System Session and Pharmacy Manager Phone
                 const { data: systemAccount } = await supabaseAdmin.from('whatsapp_accounts').select('session_id').eq('is_system', true).single();
-                const { data: pharmacyInfo } = await supabaseAdmin.from('pharmacies').select('staff_phone_number, name').eq('id', pharmacyId).single();
+                const { data: pharmacyInfo } = await supabaseAdmin.from('pharmacies').select('phone, name').eq('id', pharmacyId).single();
 
-                if (systemAccount && pharmacyInfo?.staff_phone_number) {
+                if (systemAccount && pharmacyInfo?.phone) {
                     // Format number (remove + or 0, prefix with country code)
-                    let staffPhone = pharmacyInfo.staff_phone_number.replace(/\D/g, '');
-                    if (staffPhone.startsWith('0')) staffPhone = '256' + staffPhone.substring(1); // Assuming Uganda
+                    let staffJid = pharmacyInfo.phone.replace(/\D/g, '');
+                    if (staffJid.startsWith('0')) staffJid = '256' + staffJid.substring(1);
+                    staffJid += '@c.us';
 
                     const notifyMsg = `🛒 *NEW AFYA LINKS ORDER*\nOrder: ${order.order_number}\nClinic: ${clinicData?.name || senderPhone}\n\nDetails:\n${messageText}\n\n*Please review the order and reply with the total price (e.g. "${order.order_number} 50000").*`;
                     
-                    await WhatsAppManager.getInstance().sendMessage(systemAccount.session_id, `${staffPhone}@s.whatsapp.net`, notifyMsg);
+                    await WhatsAppManager.getInstance().sendMessage(systemAccount.session_id, staffJid, notifyMsg);
                 } else {
-                    logger.error(`Could not forward order ${order.order_number}. System session: ${!!systemAccount}, Staff phone: ${!!pharmacyInfo?.staff_phone_number}`);
+                    logger.error(`Could not forward order ${order.order_number}. System session: ${!!systemAccount}, Staff phone: ${!!pharmacyInfo?.phone}`);
                 }
             } else {
                 // Fallback for unknown intents
