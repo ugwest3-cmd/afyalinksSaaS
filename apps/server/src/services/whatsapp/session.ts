@@ -85,6 +85,18 @@ export class WhatsAppSession {
 
             const { getSessionStoragePath } = await import('./config.js');
             const path = await import('path');
+            const fs = await import('fs');
+
+            // Clean up stale lock files from previous crashes to prevent "Profile in use" errors
+            const sessionDataPath = path.resolve(getSessionStoragePath(), 'session-' + this.sessionId);
+            const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
+            for (const lf of lockFiles) {
+                const lockFile = path.join(sessionDataPath, lf);
+                if (fs.existsSync(lockFile)) {
+                    try { fs.unlinkSync(lockFile); logger.info(`Removed stale ${lf} for session ${this.sessionId}`); } catch (e) {}
+                }
+            }
+
             this.client = new Client({
                 authStrategy: new LocalAuth({
                     clientId: this.sessionId,
@@ -93,6 +105,7 @@ export class WhatsAppSession {
                 puppeteer: {
                     headless: true,
                     args: [
+                        '--headless',
                         '--no-sandbox',
                         '--disable-setuid-sandbox',
                         '--disable-dev-shm-usage',
@@ -101,7 +114,7 @@ export class WhatsAppSession {
                         '--no-zygote',
                         '--disable-gpu'
                     ],
-                    executablePath: browserPath
+                    executablePath: browserPath || undefined
                 }
             });
 
