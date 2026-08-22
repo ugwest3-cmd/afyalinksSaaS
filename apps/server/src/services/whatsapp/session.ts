@@ -92,8 +92,12 @@ export class WhatsAppSession {
             const lockFiles = ['SingletonLock', 'SingletonCookie', 'SingletonSocket'];
             for (const lf of lockFiles) {
                 const lockFile = path.join(sessionDataPath, lf);
-                if (fs.existsSync(lockFile)) {
-                    try { fs.unlinkSync(lockFile); logger.info(`Removed stale ${lf} for session ${this.sessionId}`); } catch (e) {}
+                try {
+                    fs.lstatSync(lockFile);
+                    fs.unlinkSync(lockFile);
+                    logger.info(`Removed stale ${lf} for session ${this.sessionId}`);
+                } catch (e) {
+                    // File or symlink doesn't exist, ignore
                 }
             }
 
