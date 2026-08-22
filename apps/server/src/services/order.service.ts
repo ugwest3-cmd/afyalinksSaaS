@@ -75,6 +75,7 @@ export class OrderService {
           clinic_id: clinic.id,
           whatsapp_account_id: waAccountId,
           customer_phone: data.clinicPhone,
+          original_message: data.originalMessage,
           status: 'RECEIVED'
         })
         .select()
