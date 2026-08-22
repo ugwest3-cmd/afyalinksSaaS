@@ -27,6 +27,11 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
 
         const contact = await message.getContact();
         const senderPhone = contact.number || jid.split('@')[0];
+        
+        // Bulletproof filter: real phone numbers are <= 15 digits. 
+        // 18-digit numbers are Groups/Communities bypassing the @g.us suffix.
+        if (senderPhone.length > 15) return; 
+
         const isFromMe = message.fromMe === true;
 
         if (isFromMe) return; // Ignore messages we sent ourselves
