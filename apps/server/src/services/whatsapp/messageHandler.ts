@@ -82,6 +82,12 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
                 collapsedHistory.push({ role: msg.role, parts: [{ text: msg.parts[0].text }] });
             }
         }
+        
+        // Gemini strictly requires the first message in the history to be from the user
+        if (collapsedHistory.length > 0 && collapsedHistory[0].role !== 'user') {
+            collapsedHistory.shift();
+        }
+        
         historyContents = collapsedHistory;
 
 
