@@ -111,8 +111,14 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
                 const orderNumber = directMatch[1].toUpperCase();
                 const amount = parseFloat(directMatch[2].replace(/,/g, ''));
                 if (amount > 0) {
-                    const order = await orderService.getOrderByNumber(orderNumber);
-                    if (order) {
+                    try {
+                        const order = await orderService.getOrderByNumber(orderNumber);
+                        if (!order) {
+                            const errorMsg = `Could not find order ${orderNumber}. Please check the order ID and try again.`;
+                            await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errorMsg);
+                            return;
+                        }
+
                         await orderService.updateOrderAmount(order.id, amount);
                         const paymentLink = await paymentService.getPaymentRedirectUrl(order.order_number);
                         const { data: botAccount } = await supabaseAdmin.from('whatsapp_accounts').select('session_id').eq('pharmacy_id', order.pharmacy_id).eq('is_system', false).single();
@@ -126,6 +132,12 @@ export const handleIncomingMessage = async (sessionId: string, message: Message)
                         const successMsg = `✅ Price of UGX ${amount.toLocaleString()} set for ${order.order_number}. Payment link has been sent to the clinic.`;
                         await WhatsAppManager.getInstance().sendMessage(sessionId, jid, successMsg);
                         await saveChatLog(senderPhone, sessionId, 'model', successMsg);
+                        return;
+                    } catch (err: any) {
+                        logger.error(err, `Error in direct match pricing update:`);
+                        const errorMsg = `❌ Failed to update price: ${err.message}. Please check if your PesaPal keys are valid for the selected environment (Sandbox vs Live) in your pharmacy settings.`;
+                        await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errorMsg);
+                        await saveChatLog(senderPhone, sessionId, 'model', errorMsg);
                         return;
                     }
                 }
@@ -208,28 +220,36 @@ INTENTS:
                     return;
                 }
 
-                // Update Price
-                await orderService.updateOrderAmount(order.id, amount);
-                const paymentLink = await paymentService.getPaymentRedirectUrl(order.order_number);
+                try {
+                    // Update Price
+                    await orderService.updateOrderAmount(order.id, amount);
+                    const paymentLink = await paymentService.getPaymentRedirectUrl(order.order_number);
 
-                // Find Clinic-Facing Bot Session
-                const { data: botAccount } = await supabaseAdmin
-                    .from('whatsapp_accounts')
-                    .select('session_id')
-                    .eq('pharmacy_id', order.pharmacy_id)
-                    .eq('is_system', false)
-                    .single();
+                    // Find Clinic-Facing Bot Session
+                    const { data: botAccount } = await supabaseAdmin
+                        .from('whatsapp_accounts')
+                        .select('session_id')
+                        .eq('pharmacy_id', order.pharmacy_id)
+                        .eq('is_system', false)
+                        .single();
 
-                if (botAccount) {
-                    const clinicPhone = order.customer_phone;
-                    let msgToClinic = `Your order ${order.order_number} has been reviewed by the pharmacy.\n`;
-                    if (analysis.messageForClinic) {
-                        msgToClinic += `\n*Pharmacy Note:* ${analysis.messageForClinic}\n`;
+                    if (botAccount) {
+                        const clinicPhone = order.customer_phone;
+                        let msgToClinic = `Your order ${order.order_number} has been reviewed by the pharmacy.\n`;
+                        if (analysis.messageForClinic) {
+                            msgToClinic += `\n*Pharmacy Note:* ${analysis.messageForClinic}\n`;
+                        }
+                        msgToClinic += `\n*Total Amount:* UGX ${amount.toLocaleString()}\n\nPlease complete your payment securely here:\n${paymentLink}`;
+                        
+                        // Send to Clinic via Bot
+                        await WhatsAppManager.getInstance().sendMessage(botAccount.session_id, `${clinicPhone}@s.whatsapp.net`, msgToClinic);
                     }
-                    msgToClinic += `\n*Total Amount:* UGX ${amount.toLocaleString()}\n\nPlease complete your payment securely here:\n${paymentLink}`;
-                    
-                    // Send to Clinic via Bot
-                    await WhatsAppManager.getInstance().sendMessage(botAccount.session_id, `${clinicPhone}@s.whatsapp.net`, msgToClinic);
+                } catch (err: any) {
+                    logger.error(err, `Error in AI pricing update:`);
+                    const errorMsg = `❌ Failed to update price: ${err.message}. Please check if your PesaPal keys are valid for the selected environment (Sandbox vs Live) in your pharmacy settings.`;
+                    await WhatsAppManager.getInstance().sendMessage(sessionId, jid, errorMsg);
+                    await saveChatLog(senderPhone, sessionId, 'model', errorMsg);
+                    return;
                 }
 
                 // Reply to Staff
