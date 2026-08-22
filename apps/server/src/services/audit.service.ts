@@ -13,7 +13,7 @@ export const logAction = async (
     const { error } = await supabaseAdmin
       .from('audit_logs')
       .insert([{
-        actor_id: actorId,
+        actor: actorId,
         action,
         entity_type: entityType,
         entity_id: entityId,
