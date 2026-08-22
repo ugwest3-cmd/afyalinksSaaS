@@ -60,6 +60,12 @@ export class OrderService {
         
       if (pharmacyError) throw pharmacyError;
 
+      let waAccountId = data.whatsappAccountId;
+      if (waAccountId && waAccountId.startsWith('wa_')) {
+        const { data: waAcc } = await supabaseAdmin.from('whatsapp_accounts').select('id').eq('session_id', waAccountId).single();
+        if (waAcc) waAccountId = waAcc.id;
+      }
+
       // Insert order
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
@@ -67,7 +73,7 @@ export class OrderService {
           order_number: orderNumber,
           pharmacy_id: data.pharmacyId,
           clinic_id: clinic.id,
-          whatsapp_account_id: data.whatsappAccountId,
+          whatsapp_account_id: waAccountId,
           status: 'RECEIVED'
         })
         .select()
