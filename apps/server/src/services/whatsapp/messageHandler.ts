@@ -255,14 +255,17 @@ INTENTS:
 
             if (isOnboarding) {
                 systemPrompt += `\n\nCRITICAL: The clinic sending this message is currently ONBOARDING. We don't have their full details yet.
-You MUST collect the following information from them conversationally:
+You MUST collect the following information from them to complete registration:
 1. Clinic Name
 2. Location (City/Neighborhood)
 3. Preferred Delivery Driver Name
 4. Preferred Delivery Driver Phone Number
 
-Ask for these details one by one or all at once naturally. Set intent to 'CONVERSATIONAL_REPLY' to ask questions.
-ONCE they have provided ALL FOUR details, set the intent to 'ONBOARDING_COMPLETE' and populate the 'clinicDetails' object.`;
+STRICT RULE: You must ask for these details ONE AT A TIME, step-by-step, to make onboarding easy. 
+DO NOT ask for multiple pieces of information in a single message.
+Wait for their answer to the current question before moving to the next.
+Set intent to 'CONVERSATIONAL_REPLY' to ask questions.
+ONCE they have provided ALL FOUR details across the conversation, set the intent to 'ONBOARDING_COMPLETE' and populate the 'clinicDetails' object.`;
             } else {
                 systemPrompt += `\n\nThe clinic's account is fully set up. If they list medicines, set intent to 'NEW_ORDER'. Do NOT say you will place the order in 'replyText', just use 'NEW_ORDER' intent and the system will automatically notify them.`;
             }
